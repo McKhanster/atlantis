@@ -1,0 +1,125 @@
+modules:
+  rovo:agent:
+    - key: ai-native-core-hello-world-agent
+      name: ai-native-core
+      description: An agent for testing Forge agent functionality
+      prompt: >
+        You are a simple agent that helps Forge developers build their first
+        Rovo agent.
+
+        You can create Forge logs by using the hello-world-logger action.
+
+        If the user hasn't provided a message when they ask you to create a log
+        ask them to provide one.
+      conversationStarters:
+        - Log a message to Forge logs
+      actions:
+        - hello-world-logger
+  action:
+    - key: hello-world-logger
+      name: Log a message
+      function: messageLogger
+      actionVerb: GET
+      description: >
+        When a user asks to log a message, this action logs the message to the
+        Forge logs.
+      inputs:
+        message:
+          title: Message
+          type: string
+          required: true
+          description: |
+            "The message that the user has requested be logged to Forge logs"
+  function:
+    - key: messageLogger
+      handler: index.messageLogger
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  storage:
+    entities:
+      # ERP Context Entity
+      - name: erp-context
+        attributes:
+          contextId:
+            type: string
+          source:
+            type: string
+          entityType:
+            type: string
+          entityId:
+            type: string
+          data:
+            type: any
+          embeddings:
+            type: any
+          createdAt:
+            type: string
+          updatedAt:
+            type: string
+          tags:
+            type: any
+        indexes:
+          - source
+          - entityType
+          - name: by-source-date
+            partition:
+              - source
+            range:
+              - createdAt
+
+      # Module Registration Entity
+      - name: module-registration
+        attributes:
+          moduleId:
+            type: string
+          moduleName:
+            type: string
+          moduleType:
+            type: string
+          capabilities:
+            type: any
+          status:
+            type: string
+          registeredAt:
+            type: string
+          metadata:
+            type: any
+        indexes:
+          - moduleType
+          - status
+
+      # AI Prediction Cache Entity
+      - name: prediction-cache
+        attributes:
+          predictionId:
+            type: string
+          contextHash:
+            type: string
+          predictionType:
+            type: string
+          result:
+            type: any
+          confidence:
+            type: float
+          createdAt:
+            type: string
+          expiresAt:
+            type: string
+        indexes:
+          - contextHash
+          - predictionType
+          - name: by-expiry
+            range:
+              - expiresAt
+  id: ari:cloud:ecosystem::app/f68c198a-b36e-4485-aca8-35ef0d5a407f
+
+permissions:
+  scopes:
+    - storage:app
+
+  external:
+    fetch:
+      backend: []
