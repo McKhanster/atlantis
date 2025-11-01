@@ -1,1 +1,0 @@
-{"version":3,"file":"mcp-error.js","sourceRoot":"","sources":["../../../src/shared/errors/mcp-error.ts"],"names":[],"mappings":";AAAA;;GAEG;;;AAIH,MAAa,QAAS,SAAQ,KAAK;IAGf;IACA;IAHlB,YACE,OAAe,EACC,IAAkB,EAClB,OAAiC;QAEjD,KAAK,CAAC,OAAO,CAAC,CAAC;QAHC,SAAI,GAAJ,IAAI,CAAc;QAClB,YAAO,GAAP,OAAO,CAA0B;QAGjD,IAAI,CAAC,IAAI,GAAG,UAAU,CAAC;IACzB,CAAC;CACF;AATD,4BASC"}
