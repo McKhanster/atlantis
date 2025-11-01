@@ -1,0 +1,20 @@
+{
+  "name": "atlantis-mcp-client",
+  "version": "1.0.0",
+  "description": "MCP Client for Atlantis Core - CLI interface instead of LLM",
+  "main": "dist/client.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/client.js",
+    "dev": "tsc && node dist/client.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.2",
+     "@a2a-js/sdk": "^0.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "typescript": "^5.9.3"
+  }
+}
