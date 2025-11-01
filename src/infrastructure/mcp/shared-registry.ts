@@ -4,7 +4,7 @@
 
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { ModuleInfo } from './mcp-server';
+import { ModuleInfo } from './mcp-server.js';
 
 const REGISTRY_FILE = join(process.cwd(), 'atlantis-shared-registry.json');
 

@@ -2,10 +2,10 @@
  * List Modules Tool - Inherits from BaseTool
  */
 
-import { BaseTool } from './base-tool';
-import { HttpModuleRegistry } from '../mcp/http-registry';
-import { ModuleInfo } from '../mcp/mcp-server';
-import { MCPResponse } from '../../types/mcp';
+import { BaseTool } from './base-tool.js';
+import { HttpModuleRegistry } from '../mcp/http-registry.js';
+import { ModuleInfo } from '../mcp/mcp-server.js';
+import { MCPResponse } from '../../types/mcp.js';
 
 export class ListModulesTool extends BaseTool {
   private static instance: ListModulesTool;
@@ -23,7 +23,7 @@ export class ListModulesTool extends BaseTool {
     return ListModulesTool.instance;
   }
 
-  async execute(requestId: string = 'list-modules'): Promise<MCPResponse> {
+  async execute(requestId: string = 'list-modules', data: Record<string, unknown>): Promise<MCPResponse> {
     const startTime = Date.now();
     this.incrementCallCount();
     
@@ -34,6 +34,6 @@ export class ListModulesTool extends BaseTool {
       timestamp: new Date().toISOString()
     };
     
-    return this.createMCPResponse(requestId, result, startTime);
+    return this.createMCPResponse(requestId, result, data, startTime);
   }
 }

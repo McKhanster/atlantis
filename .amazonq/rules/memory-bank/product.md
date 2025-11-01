@@ -1,58 +1,49 @@
-# AI-Native Orchestrator Modular Suite (AIMS)
+# Atlantis Core MCP Server - Product Overview
 
-## Project Purpose
-AIMS is a modular, AI-native extension suite built on Atlassian's Forge platform for the Codegeist 2025 hackathon. The project creates an intelligent orchestration layer that enables business teams to leverage AI capabilities across Jira and Confluence through pluggable modules.
+## Purpose
+AI-Native Orchestrator Core serving as a Model Context Protocol (MCP) server for Rovo Dev integration. Enables AI-powered orchestration across Atlassian Jira and Confluence environments through centralized module management and tool execution.
 
 ## Value Proposition
-- **AI-Native Architecture**: Built from the ground up with AI orchestration at its core
-- **Modular Design**: Pluggable modules for different business functions (inventory, vendor management, etc.)
-- **Seamless Integration**: Native Atlassian platform integration with Rovo agent capabilities
-- **Business Team Focus**: Designed specifically for operation-focused teams (marketing, finance, HR, procurement)
+- **Centralized AI Orchestration**: Single point of control for AI agents across Atlassian ecosystem
+- **Protocol Bridge**: Seamless integration between external AI agents and Rovo Dev through MCP
+- **Module Registry**: Dynamic registration and management of AI capabilities and tools
+- **Forge Integration**: Native Atlassian Forge app with proper storage and permissions
 
 ## Key Features
 
-### Core Orchestrator
-- **Rovo Agent Integration**: Central AI agent that coordinates all module interactions
-- **MCP Communication Layer**: Model Context Protocol for standardized module communication
-- **Context Management**: Intelligent context sharing and AI embedding storage
-- **Module Registry**: Dynamic registration and discovery of pluggable modules
+### Core Capabilities
+- **MCP Server**: Standards-compliant Model Context Protocol server implementation
+- **Health Monitoring**: Real-time server health checks and status reporting
+- **Module Management**: Dynamic registration and listing of AI modules with capabilities
+- **Centralized Logging**: Comprehensive logging infrastructure for all operations
 
-### Communication Protocol
-- **MCP over HTTPS/REST**: Standardized protocol for inter-module communication
-- **Forge Invocation Token Authentication**: Secure JWT-based authentication
-- **Context Propagation**: Intelligent context sharing between modules and core
-- **Real-time Updates**: Live synchronization of data and AI insights
+### Atlassian Integration
+- **Rovo Agent**: AI agent for Forge development assistance with conversation starters
+- **Jira Panels**: Custom issue panels for MCP testing and interaction
+- **Action Framework**: Forge actions for message logging, MCP queries, and health checks
+- **Storage Entities**: Persistent storage for context, module registrations, and prediction cache
 
-### Storage Architecture
-- **Forge-Hosted Storage**: Compliant with "Runs on Atlassian" requirements
-- **Custom Entities**: Structured data storage with indexing and querying
-- **AI Embedding Storage**: Vector embeddings stored as arrays in entity attributes
-- **Prediction Caching**: Intelligent caching of AI predictions and results
+### Development Tools
+- **TypeScript Support**: Full TypeScript implementation with strict type checking
+- **Testing Framework**: Jest-based testing with coverage reporting
+- **Linting**: ESLint configuration for code quality
+- **Build Pipeline**: Automated build, test, and deployment scripts
 
 ## Target Users
 
 ### Primary Users
-- **Business Operations Teams**: Marketing, finance, HR, procurement teams needing AI-powered insights
-- **Project Managers**: Teams managing cross-functional projects requiring intelligent coordination
-- **Decision Makers**: Leaders needing AI-driven recommendations and analytics
+- **AI/ML Engineers**: Building AI agents that need to interact with Atlassian products
+- **Forge Developers**: Creating Atlassian apps with AI capabilities
+- **DevOps Teams**: Managing AI orchestration in enterprise Atlassian environments
 
 ### Use Cases
-- **Inventory Optimization**: AI-powered inventory management and demand forecasting
-- **Vendor Management**: Intelligent vendor scoring and relationship management
-- **Cross-Module Analytics**: Unified insights across different business functions
-- **Automated Workflows**: AI-driven process automation and optimization
+- **Cross-Platform AI Workflows**: Orchestrating AI tasks across Jira and Confluence
+- **Agent Development**: Building and testing AI agents for Atlassian environments  
+- **Enterprise AI Integration**: Centralized management of AI capabilities in large organizations
+- **Rovo Dev Enhancement**: Extending Rovo Dev capabilities through custom MCP tools
 
-## Competition Alignment
-
-### Codegeist 2025 Category
-- **Primary**: Apps for Business Teams
-- **Bonus Prizes**: Best Rovo Apps, Best Apps Built Using Rovo Dev, Best Runs on Atlassian
-
-### Key Innovation
-The Model Context Protocol (MCP) implementation enables true modularity while maintaining AI-native communication patterns, allowing for unprecedented flexibility in business team tooling.
-
-## Technical Differentiators
-- **Hybrid MCP Implementation**: Combines existing npm MCP libraries with custom Forge adaptations
-- **Layered DDD Architecture**: Domain-driven design with clear separation of concerns
-- **Type-Safe Communication**: Full TypeScript implementation with strict typing
-- **Comprehensive Testing**: 82%+ test coverage with quality gates
+## Architecture Benefits
+- **Hybrid Protocol Support**: Planned A2A (Agent-to-Agent) protocol for external agents
+- **Security**: All external access mediated through Atlantis Core with proper authentication
+- **Scalability**: Modular architecture supporting dynamic capability expansion
+- **Compliance**: Runs on Atlassian infrastructure with proper data governance

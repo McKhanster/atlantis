@@ -3,17 +3,13 @@
  * Exports all MCP communication components
  */
 
-export {
-  McpForgeServer,
-  createMcpServer,
-  type MCPRequestHandler,
-} from './server';
+
 
 export {
   McpForgeClient,
   createMcpClient,
   type MCPClientConfig,
-} from './client';
+} from './client.js';
 
 export {
   validateMCPRequest,
@@ -23,4 +19,4 @@ export {
   assertValidMCPRequest,
   assertValidMCPResponse,
   type ValidationResult,
-} from './validation';
+} from './validation.js';

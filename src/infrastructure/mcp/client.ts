@@ -14,9 +14,9 @@ import {
   type ModuleRegistrationRequest,
   type ModuleRegistrationResponse,
   MCPErrorCode,
-} from '../../types/mcp';
-import { validateMCPResponse } from './validation';
-import { MCPError } from '../../shared/errors/mcp-error';
+} from '../../types/mcp.js';
+import { validateMCPResponse } from './validation.js';
+import { MCPError } from '../../shared/errors/mcp-error.js';
 
 export interface MCPClientConfig {
   coreEndpoint: string;

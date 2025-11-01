@@ -1,155 +1,130 @@
-# Technology Stack and Development
+# Atlantis Core - Technology Stack
 
-## Programming Languages and Versions
+## Programming Languages
+- **TypeScript 5.9.3**: Primary language with strict type checking
+- **JavaScript**: Runtime execution via Node.js
+- **YAML**: Configuration files (manifest.yml, CI/CD)
 
-### Primary Stack
-- **TypeScript 5.9.3**: Strict mode enabled, zero `any` types policy
-- **Node.js 22.x**: Runtime environment (ARM64 architecture)
-- **JavaScript ES2022**: Target compilation for modern features
+## Core Dependencies
 
-### Framework and Platform
-- **Atlassian Forge**: Native platform integration
-- **Forge UI Kit**: React-based UI components
-- **Rovo Agent**: AI orchestration and conversation management
+### MCP Framework
+- **@modelcontextprotocol/sdk ^1.20.2**: Official Model Context Protocol SDK
+- **zod ^3.23.8**: Runtime type validation and schema parsing
 
-## Dependencies
+### Web Framework
+- **express ^5.1.0**: HTTP server for A2A protocol and API endpoints
 
-### Production Dependencies
+### Development Tools
+- **@typescript-eslint/eslint-plugin ^8.46.2**: TypeScript-specific linting rules
+- **@typescript-eslint/parser ^8.46.2**: TypeScript AST parser for ESLint
+- **eslint ^9.38.0**: Code quality and style enforcement
+
+### Testing Framework
+- **jest**: Unit testing framework with coverage reporting
+- **@jest/globals ^30.2.0**: Jest global functions and utilities
+- **@types/jest ^30.0.0**: TypeScript definitions for Jest
+
+## Build System
+
+### TypeScript Configuration
 ```json
 {
-  "@modelcontextprotocol/sdk": "^1.20.2"
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "module": "CommonJS",
+    "outDir": "./dist"
+  }
 }
 ```
 
-### Development Dependencies
-```json
-{
-  "@jest/globals": "^30.2.0",
-  "@types/jest": "^30.0.0", 
-  "@types/node": "^24.9.2",
-  "@typescript-eslint/eslint-plugin": "^8.46.2",
-  "@typescript-eslint/parser": "^8.46.2",
-  "eslint": "^9.38.0",
-  "jest": "^30.2.0",
-  "ts-jest": "^29.4.5",
-  "typescript": "^5.9.3"
-}
-```
+### Build Commands
+- **npm run build**: Clean and compile TypeScript to dist/
+- **npm run type-check**: Type checking without compilation
+- **npm run clean**: Remove dist/ and coverage/ directories
 
-## Build System and Tools
+### Quality Assurance
+- **npm run lint**: ESLint code analysis
+- **npm run lint:fix**: Automatic lint fixes
+- **npm run test**: Jest unit tests
+- **npm run test:coverage**: Coverage reporting
+- **npm run ci**: Full CI pipeline (lint + type-check + test)
 
-### Package Scripts
-```bash
-# Code Quality
-npm run lint              # ESLint validation
-npm run lint:fix          # Auto-fix linting issues
-npm run type-check        # TypeScript compilation check
+## Runtime Environment
 
-# Testing
-npm run test              # Run all Jest tests
-npm run test:watch        # Continuous testing mode
-npm run test:coverage     # Generate coverage reports
-npm run test:ci           # CI-optimized test run
+### Node.js Runtime
+- **nodejs22.x**: Forge app runtime environment
+- **arm64**: Target architecture for deployment
+- **256MB**: Memory allocation for Forge app
 
-# Validation
-npm run ci                # Complete validation pipeline
-npm run clean             # Clean build artifacts
-```
+### Package Management
+- **npm**: Package manager with lock file for reproducible builds
+- **package-lock.json**: Dependency version locking
 
-### Forge CLI Commands
-```bash
-# Development
-forge lint                                    # Validate manifest and code
-forge deploy -e development                   # Deploy to development
-forge tunnel                                 # Real-time debugging logs
+## Atlassian Platform
 
-# Installation
-forge install --non-interactive --site <site> --product jira --environment development
-forge install --upgrade                      # Upgrade after scope changes
+### Forge Framework
+- **Forge App**: Native Atlassian cloud app platform
+- **Storage Entities**: Persistent data storage with indexing
+- **Rovo Agent**: AI agent integration framework
+- **Action Framework**: Custom actions for AI workflows
 
-# Monitoring
-forge logs -e development --limit 20         # View application logs
-forge environments --non-interactive         # Environment information
-```
-
-## Configuration Files
-
-### TypeScript Configuration (`tsconfig.json`)
-- **Strict Mode**: Enabled for maximum type safety
-- **Target**: ES2022 for modern JavaScript features
-- **Module**: CommonJS for Node.js compatibility
-- **Source Maps**: Enabled for debugging
-
-### ESLint Configuration (`eslint.config.js`)
-- **TypeScript ESLint**: Full TypeScript support
-- **Strict Rules**: Zero errors, zero warnings policy
-- **Custom Rules**: Project-specific code standards
-
-### Jest Configuration (`jest.config.js`)
-- **ts-jest**: TypeScript transformation
-- **Coverage**: Statement, branch, function, and line coverage
-- **Test Environment**: Node.js environment
-- **Setup Files**: Custom test setup and globals
-
-## Storage Technology
-
-### Forge Storage Services
-- **Forge Custom Entities**: Structured data with indexing
-  - Primary storage for business entities
-  - Support for complex queries and relationships
-  - Built-in indexing for performance optimization
-
-- **Forge Key-Value Store (KVS)**: Simple key-value pairs
-  - Configuration and caching
-  - Session data and temporary storage
-  - High-performance read/write operations
-
-### Data Models
+### Storage Configuration
 ```yaml
-# Custom Entities Schema
-erp-context:
-  attributes: [contextId, source, entityType, data, embeddings, createdAt]
-  indexes: [source, entityType, by-source-date]
-
-module-registration:
-  attributes: [moduleId, moduleName, capabilities, status, registeredAt]
-  indexes: [moduleType, status]
-
-prediction-cache:
-  attributes: [predictionId, contextHash, result, confidence, expiresAt]
-  indexes: [contextHash, predictionType, by-expiry]
+storage:
+  entities:
+    - erp-context: Context storage with embeddings
+    - module-registration: Dynamic module tracking  
+    - prediction-cache: AI prediction caching
 ```
 
-## Development Environment
+### Permissions
+- **storage:app**: Application-level storage access
+- **external.fetch.backend**: External API communication
 
-### Runtime Configuration
-- **Memory**: 256MB allocated
-- **Architecture**: ARM64 for optimal performance
-- **Node.js Version**: 22.x LTS
+## Development Workflow
 
-### Quality Gates
-- **ESLint**: Zero errors and warnings
-- **TypeScript**: Strict compilation with no errors
-- **Jest**: 82%+ test coverage maintained
-- **Forge Lint**: Manifest validation and compliance
+### Local Development
+```bash
+npm install          # Install dependencies
+npm run type-check   # Validate TypeScript
+npm run lint         # Check code quality
+npm run test         # Run unit tests
+npm run build        # Compile to dist/
+```
 
-### Development Workflow
-1. **Code Changes**: TypeScript with strict typing
-2. **Validation**: `npm run ci` (lint + type-check + test)
-3. **Deployment**: `forge deploy -e development`
-4. **Testing**: `forge tunnel` for real-time debugging
-5. **Monitoring**: Coverage reports and log analysis
+### Server Operations
+```bash
+npm start            # Start MCP server
+npm run registry     # Start module registry
+npm run logs         # Start log server
+npm run start:all    # Start all services
+```
 
-## Protocol Implementation
+### Testing Strategy
+- **Unit Tests**: Jest with co-located test files
+- **Type Safety**: TypeScript strict mode
+- **Code Quality**: ESLint with TypeScript rules
+- **Coverage**: Jest coverage reporting
 
-### Model Context Protocol (MCP)
-- **SDK**: @modelcontextprotocol/sdk for base functionality
-- **Custom Implementation**: Forge-specific adaptations
-- **Transport**: HTTPS/REST over Forge platform
-- **Authentication**: Forge Invocation Tokens (JWT)
+## Protocol Support
 
-### API Standards
-- **REST**: RESTful endpoints for MCP communication
-- **JSON**: Structured data exchange format
-- **Type Safety**: Full TypeScript interfaces for all APIs
-- **Validation**: Runtime validation of all inputs and outputs
+### Current Protocols
+- **MCP (Model Context Protocol)**: Primary protocol for Rovo Dev integration
+- **HTTP/Express**: REST API endpoints for health checks and queries
+
+### Planned Protocols
+- **A2A (Agent-to-Agent)**: External agent communication protocol
+- **WebSocket**: Real-time streaming for agent interactions
+
+## Deployment
+
+### Build Artifacts
+- **dist/index.js**: Main server executable
+- **Binary**: atlantis-mcp CLI command
+- **Package**: npm publishable package
+
+### Environment
+- **Atlassian Cloud**: Forge app deployment target
+- **MCP Client**: Integration with Rovo Dev
+- **External Access**: Controlled through Atlantis Core

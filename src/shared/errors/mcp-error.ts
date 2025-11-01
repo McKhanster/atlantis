@@ -2,7 +2,7 @@
  * MCP-specific error classes
  */
 
-import { MCPErrorCode } from '../../types/mcp';
+import { MCPErrorCode } from '../../types/mcp.js';
 
 export class MCPError extends Error {
   constructor(

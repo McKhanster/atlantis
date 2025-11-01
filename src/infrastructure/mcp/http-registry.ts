@@ -2,7 +2,7 @@
  * HTTP API Sync Module Registry - Distributed state across MCP server instances
  */
 
-import { ModuleInfo } from './mcp-server';
+import { ModuleInfo } from './mcp-server.js';
 
 const REGISTRY_API_URL = process.env.ATLANTIS_REGISTRY_URL || 'http://localhost:3001/api/modules';
 

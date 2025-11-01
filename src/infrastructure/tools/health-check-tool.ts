@@ -2,8 +2,8 @@
  * Health Check Tool - Inherits from BaseTool
  */
 
-import { BaseTool } from './base-tool';
-import { MCPResponse } from '../../types/mcp';
+import { BaseTool } from './base-tool.js';
+import { MCPResponse } from '../../types/mcp.js';
 
 export class HealthCheckTool extends BaseTool {
   private static instance: HealthCheckTool;
@@ -19,7 +19,7 @@ export class HealthCheckTool extends BaseTool {
     return HealthCheckTool.instance;
   }
 
-  async execute(requestId: string = 'health-check'): Promise<MCPResponse> {
+  async execute(requestId: string = 'health-check', data: Record<string, unknown>, req: Record<string, unknown>): Promise<MCPResponse> {
     const startTime = Date.now();
     this.incrementCallCount();
     
@@ -30,6 +30,6 @@ export class HealthCheckTool extends BaseTool {
       version: '1.0.0'
     };
     
-    return this.createMCPResponse(requestId, result, startTime);
+    return this.createMCPResponse(requestId, result, req, startTime);
   }
 }

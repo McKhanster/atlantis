@@ -3,8 +3,8 @@
  */
 
 import { randomUUID } from 'crypto';
-import { CentralLogger } from '../mcp/central-logger';
-import { MCPRequest, MCPResponse } from '../../types/mcp';
+import { CentralLogger } from '../mcp/central-logger.js';
+import { MCPRequest, MCPResponse } from '../../types/mcp.js';
 
 export abstract class BaseTool {
   protected createdAt: string;
@@ -17,14 +17,14 @@ export abstract class BaseTool {
   }
 
   protected logInteraction(type: string, data: Record<string, unknown>): void {
-    this.logger.logInteraction(type, { tool: this.toolName, ...data });
+    this.logger.logInteraction(type, { tool: this.toolName, data });
   }
 
   protected incrementCallCount(): void {
     this.callCount++;
   }
 
-  protected createMCPResponse(requestId: string, result: Record<string, unknown>, processingStartTime: number): MCPResponse {
+  protected createMCPResponse(requestId: string, result: Record<string, unknown>,request: Record<string, unknown>, processingStartTime: number): MCPResponse {
     const response : MCPResponse =  {
       responseId: randomUUID(),
       requestId,
@@ -35,7 +35,7 @@ export abstract class BaseTool {
         processingTime: Date.now() - processingStartTime
       }
     };
-    this.logInteraction('MCP_RESPONSE', { response });
+    this.logInteraction('MCP_RESPONSE', { response, request });
     return response;
   }
 

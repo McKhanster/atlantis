@@ -1,112 +1,101 @@
-# Project Structure and Architecture
+# Atlantis Core - Project Structure
 
-## Directory Organization
+## Root Directory Organization
 
-### Root Structure
-```
-atlantis/
-├── docs/                          # Comprehensive documentation
-├── src/                           # Source code (layered architecture)
-├── coverage/                      # Test coverage reports
-├── .amazonq/rules/memory-bank/    # AI assistant memory bank
-├── manifest.yml                   # Forge app configuration
-├── package.json                   # Node.js dependencies
-└── tsconfig.json                  # TypeScript configuration
-```
+### Configuration & Build
+- **package.json**: Main project configuration with MCP SDK dependencies and build scripts
+- **tsconfig.json**: TypeScript configuration for strict type checking
+- **eslint.config.js**: Code quality and linting rules
+- **jest.config.js**: Testing framework configuration
+- **manifest.yml**: Forge app manifest defining modules, actions, and storage entities
 
-### Source Code Architecture (`src/`)
+### Source Code Structure
 ```
 src/
-├── index.ts                       # Main entry point, resolver exports
-├── types/                         # Shared TypeScript definitions
-│   ├── mcp.ts                     # MCP protocol types
-│   ├── domain.ts                  # Domain entity types
-│   └── api.ts                     # API response types
-├── domain/                        # Business logic layer (DDD)
-│   ├── entities/                  # Domain entities
-│   ├── services/                  # Business logic services
-│   └── value-objects/             # Value objects
-├── resolvers/                     # Presentation layer
-│   ├── mcp/                       # MCP endpoint resolvers
-│   ├── rovo/                      # Rovo agent resolvers
-│   └── validation/                # Input validation
-├── infrastructure/                # Infrastructure layer
-│   ├── mcp/                       # MCP server/client implementation
-│   ├── storage/                   # Storage implementations
-│   ├── atlassian/                 # Jira/Confluence API clients
-│   └── config/                    # Configuration & DI
-├── frontend/                      # UI layer (Forge UI Kit)
-│   ├── components/                # React components
-│   └── hooks/                     # Custom React hooks
-└── shared/                        # Shared utilities
-    ├── errors/                    # Custom error types
-    └── utils/                     # Utility functions
+├── infrastructure/          # Core infrastructure components
+│   ├── mcp/                # MCP protocol implementation
+│   ├── atlassian/          # Atlassian-specific integrations
+│   ├── storage/            # Data persistence layer
+│   ├── config/             # Configuration management
+│   └── tools/              # MCP tool implementations
+├── shared/                 # Shared utilities and errors
+├── types/                  # TypeScript type definitions
+├── tools/                  # Standalone tool servers
+└── function-inventory.md   # Centralized function registry
 ```
+
+### Client & Documentation
+- **client/**: Separate MCP client implementation with its own package.json
+- **docs/**: Comprehensive documentation including implementation plans and guides
+- **scripts/**: Deployment and configuration scripts
 
 ## Core Components
 
-### MCP Communication Layer (`infrastructure/mcp/`)
-- **server.ts**: MCP server implementation for receiving module requests
-- **client.ts**: MCP client for communicating with external modules
-- **auth.ts**: Forge Invocation Token authentication
-- **validation.ts**: MCP protocol validation and type checking
+### MCP Infrastructure (`src/infrastructure/mcp/`)
+- **mcp-server.ts**: Main MCP server implementation
+- **auth.ts**: Authentication and authorization logic
+- **central-logger.ts**: Centralized logging system
+- **client.ts**: MCP client for external communication
+- **validation.ts**: Request/response validation
+- **junction.ts**: Protocol junction and routing
+- **shared-registry.ts**: Module and capability registry
 
-### Storage Architecture (`infrastructure/storage/`)
-- **Forge Custom Entities**: Structured data with indexing
-  - `erp-context`: AI context and embeddings storage
-  - `module-registration`: Dynamic module registry
-  - `prediction-cache`: AI prediction caching
-- **Forge KVS**: Simple key-value storage for configuration
+### Tool System (`src/infrastructure/tools/`)
+- **base-tool.ts**: Abstract base class for all MCP tools
+- **health-check-tool.ts**: Server health monitoring
+- **list-modules-tool.ts**: Module registry queries
 
-### Type System (`types/`)
-- **mcp.ts**: Complete MCP protocol type definitions
-- **domain.ts**: Business domain entity types
-- **api.ts**: API request/response interfaces
+### Type System (`src/types/`)
+- **mcp.ts**: MCP protocol type definitions
+- **api.ts**: API interface definitions
+- **domain.ts**: Domain model types
+- **express.d.ts**: Express framework extensions
+
+### Error Handling (`src/shared/errors/`)
+- **domain-error.ts**: Domain-specific error types
+- **mcp-error.ts**: MCP protocol error handling
+- **index.ts**: Unified error exports
 
 ## Architectural Patterns
 
-### Three-Layer System Design
-1. **Core App**: Central AI orchestrator with Rovo agent, MCP server, shared storage
-2. **Module Template**: Reusable framework with MCP connector and local AI agent
-3. **Pluggable Modules**: Independent Forge apps (Inventory Optimizer, Vendor Management)
+### Modular Design
+- **Infrastructure Layer**: Core MCP and Atlassian integrations
+- **Tool Layer**: Pluggable MCP tool implementations
+- **Type Layer**: Comprehensive TypeScript type safety
+- **Shared Layer**: Common utilities and error handling
 
-### Domain-Driven Design (DDD)
-- **Domain Layer**: Pure business logic, framework-agnostic
-- **Resolvers**: Coordinate domain services, handle requests/responses
-- **Infrastructure**: External integrations (Jira API, storage, MCP)
-- **Frontend**: Forge UI Kit components and React hooks
+### Registry Pattern
+- **Module Registry**: Dynamic registration of AI capabilities
+- **Tool Registry**: MCP tool discovery and execution
+- **Function Inventory**: Centralized tracking of all functions
 
-### Communication Flow
+### Protocol Bridge Architecture
 ```
-Module → MCP Client → HTTPS/REST → Core MCP Server → Rovo Agent → AI Processing → Response
+External Agents ←A2A→ Atlantis Core ←MCP→ Rovo Dev
+                         ↓
+                    MCP Tools ←Forge→ Atlassian
 ```
 
-## Key Relationships
+### Storage Entities (Forge)
+- **erp-context**: Context storage with embeddings and metadata
+- **module-registration**: Dynamic module capability tracking
+- **prediction-cache**: AI prediction caching with expiration
 
-### Module Registration
-- Modules register capabilities via `POST /mcp/register`
-- Core maintains registry in `module-registration` entity
-- Dynamic discovery and capability matching
+## Development Structure
 
-### Context Management
-- AI context stored in `erp-context` entity with embeddings
-- Context propagation through MCP protocol
-- Intelligent context sharing between modules
+### Testing Organization
+- **__tests__/**: Co-located test files with source code
+- **setupTests.ts**: Global test configuration
+- **jest.config.js**: Testing framework setup
 
-### Storage Compliance
-- **Forge-hosted only**: No external databases
-- **Custom Entities**: Structured data with indexes
-- **AI Embeddings**: Vector arrays in entity attributes
-- **Caching Strategy**: Prediction cache with expiration
+### Build System
+- **TypeScript Compilation**: Strict type checking with tsc
+- **ESLint**: Code quality enforcement
+- **Jest**: Unit testing with coverage
+- **npm Scripts**: Automated build, test, and deployment
 
-## Testing Structure
-- **Co-located tests**: `__tests__/` directories alongside source
-- **Layer-specific testing**: Unit tests for each architectural layer
-- **Integration tests**: MCP communication and storage operations
-- **Coverage tracking**: 82%+ statement coverage maintained
-
-## Configuration Management
-- **manifest.yml**: Forge app configuration with entities and permissions
-- **package.json**: Dependencies and build scripts
-- **tsconfig.json**: TypeScript strict mode configuration
-- **eslint.config.js**: Code quality and style enforcement
+### Documentation Strategy
+- **Implementation Plans**: Detailed phase-by-phase development guides
+- **API Documentation**: MCP protocol and tool specifications
+- **Integration Guides**: Rovo Dev and Atlassian setup instructions
+- **Memory Bank**: Automated project knowledge base

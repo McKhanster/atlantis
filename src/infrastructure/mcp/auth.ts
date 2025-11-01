@@ -6,8 +6,8 @@
  * must use Forge Invocation Tokens (FIT) with JWT validation
  */
 
-import { MCPErrorCode } from '../../types/mcp';
-import { MCPError } from '../../shared/errors/mcp-error';
+import { MCPErrorCode } from '../../types/mcp.js';
+import { MCPError } from '../../shared/errors/mcp-error.js';
 
 /**
  * Forge Invocation Token (FIT) structure

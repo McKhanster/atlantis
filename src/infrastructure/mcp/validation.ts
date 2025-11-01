@@ -12,8 +12,8 @@ import {
   type MCPResponse,
   type ModuleRegistrationRequest,
   MCPErrorCode,
-} from '../../types/mcp';
-import { MCPError as MCPErrorClass } from '../../shared/errors/mcp-error';
+} from '../../types/mcp.js';
+import { MCPError as MCPErrorClass } from '../../shared/errors/mcp-error.js';
 
 export interface ValidationResult<T> {
   success: boolean;
