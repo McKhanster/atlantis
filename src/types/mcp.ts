@@ -3,7 +3,7 @@
  * Model Context Protocol for module-to-core communication
  *
  * This file defines custom MCP types that extend the standard MCP SDK
- * for our ERP-specific use cases while maintaining compatibility with
+ * for our -specific use cases while maintaining compatibility with
  * @modelcontextprotocol/sdk v1.20.2
  */
 
@@ -15,22 +15,28 @@ export type MCPSource = 'jira' | 'confluence' | 'module';
 export type MCPRequestType =
   | 'optimizeInventory'
   | 'scoreVendor'
-  | 'forecastProcurement'
+  | 'forecastOperation'
   | 'analyzeBudget'
   | 'query'
   | 'update'
-  | 'register';
+  | 'register'
+  | 'route'
+  | 'broadcast'
+  | 'connect';
 
 // Zod schemas for validation
 export const MCPSourceSchema = z.enum(['jira', 'confluence', 'module']);
 export const MCPRequestTypeSchema = z.enum([
   'optimizeInventory',
   'scoreVendor',
-  'forecastProcurement',
+  'forecastOperation',
   'analyzeBudget',
   'query',
   'update',
   'register',
+  'route',
+  'broadcast',
+  'connect',
 ]);
 
 // Zod schemas for request/response validation

@@ -1,9 +1,9 @@
-# Rough Draft Specification: Modular AI-Native ERP Extension Suite on Forge with MCP
+# Rough Draft Specification: Modular AI-Native  Extension Suite on Forge with MCP
 
 ## 1. Overview
-### Project Title: AI-Native ERP Modular Suite (AIMS)
+### Project Title: AI-Native  Modular Suite (AIMS)
 ### Purpose
-This specification outlines a modular, AI-native Enterprise Resource Planning (ERP) extension suite built on Atlassian's Forge platform. The suite extends Atlassian products (e.g., Jira for requisition tracking, Confluence for documentation, and Compass for resource mapping) to provide procurement-focused ERP capabilities, inspired by flexible systems like Odoo while incorporating AI for predictive insights. It compensates for Atlassian's weaknesses in resource planning and hardware/procurement workflows while leveraging strengths in agile collaboration.
+This specification outlines a modular, AI-native  extension suite built on Atlassian's Forge platform. The suite extends Atlassian products (e.g., Jira for requisition tracking, Confluence for documentation, and Compass for resource mapping) to provide procurement-focused  capabilities, inspired by flexible systems like Odoo while incorporating AI for predictive insights. It compensates for Atlassian's weaknesses in resource planning and hardware/procurement workflows while leveraging strengths in agile collaboration.
 
 The design emphasizes modularity for future agnosticism: A core app handles central AI logic and storage, with pluggable modules connecting via standardized communications. To ensure interoperability within the Atlassian environment and between modules, the Model Context Protocol (MCP) is utilized as the primary communication standard. MCP, an open-source protocol for secure, two-way AI-to-system interactions, enables AI agents (e.g., Rovo-based) to query and update external/contextual data seamlessly, reducing proprietary dependencies.
 
@@ -24,7 +24,7 @@ The design emphasizes modularity for future agnosticism: A core app handles cent
 ### High-Level Design
 - **Layered Structure**:
   - **Presentation Layer**: Custom UIs in Forge (UI Kit or iframes) embedded in Atlassian products (e.g., Jira dashboards).
-  - **Business Logic Layer**: AI agents via Rovo, handling ERP functions like optimization.
+  - **Business Logic Layer**: AI agents via Rovo, handling  functions like optimization.
   - **Data Layer**: Forge entity storage (for Atlassian-tied data) + external DB (e.g., PostgreSQL via APIs) for agnostic persistence.
   - **Communication Layer**: MCP for standardized, context-rich exchanges between core/modules and external systems.
 - **Modular Breakdown**:
@@ -100,12 +100,12 @@ Body: {
 
 ## Phase 1: Core Development (Second Half)
 ### 3.1 Core App: AI Core Hub
-- **Integration with Atlassian**: Manifest declares Jira/Confluence extensions (e.g., custom fields for ERP metadata). Uses product fetch API for data pulls.
+- **Integration with Atlassian**: Manifest declares Jira/Confluence extensions (e.g., custom fields for  metadata). Uses product fetch API for data pulls.
 - **Key Features**:
   - Main Rovo Agent: Handles AI tasks (e.g., "Optimize order based on context") using rovo:agent/actions.
-  - Database: Forge storage for structured ERP data (e.g., BOMs, vendors); abstract to allow external swaps.
+  - Database: Forge storage for structured  data (e.g., BOMs, vendors); abstract to allow external swaps.
   - MCP Server: Exposes MCP-compliant endpoints (e.g., /mcp/context/query) for modules to send/receive AI contexts.
-- **Development**: Use Rovo Dev to generate agent code (e.g., prompt: "Scaffold MCP-integrated Rovo agent for ERP predictions").
+- **Development**: Use Rovo Dev to generate agent code (e.g., prompt: "Scaffold MCP-integrated Rovo agent for  predictions").
 
 ## Phase 2: Modular Extensions
 ### Module Template: Plug-and-Play Framework with Collaboration AI Agent
@@ -128,7 +128,7 @@ This template defines a standardized structure for all modular extensions, ensur
   - **Integration**: Forge trigger on Jira issue events; UI extension in Jira for inventory views.
   - **Comms**: Sends MCP requests to core (e.g., payload with context like Jira backlog data) for AI optimization; receives responses to update local state.
 - **Module 2: Vendor Management**
-  - **Integration**: Macro in Confluence for vendor scoring; web trigger for external ERP syncs.
+  - **Integration**: Macro in Confluence for vendor scoring; web trigger for external  syncs.
   - **Comms**: Uses MCP to query core agent (e.g., "Score vendors with context: historical performance").
 - **Module 3: Budget Tracker (Optional)**
   - **Integration**: Compass component for financial simulations.

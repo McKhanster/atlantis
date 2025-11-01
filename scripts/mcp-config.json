@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "atlantis-core": {
+      "command": "./start-mcp.sh",
+      "args": [],
+      "cwd": "/home/esel/Documents/atlantis"
+    }
+  }
+}

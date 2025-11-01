@@ -2,7 +2,7 @@
  * Domain Entity Type Definitions
  */
 
-export interface ERPContext {
+export interface Context {
   contextId: string;
   source: 'jira' | 'confluence' | 'module';
   entityType: string;

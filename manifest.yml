@@ -1,4 +1,10 @@
 modules:
+  jira:issuePanel:
+    - key: mcp-test-panel
+      title: MCP Test Panel
+      url: /mcp-test
+      resolver:
+        function: mcpTestPanel
   rovo:agent:
     - key: ai-native-core-hello-world-agent
       name: ai-native-core
@@ -15,6 +21,8 @@ modules:
         - Log a message to Forge logs
       actions:
         - hello-world-logger
+        - mcp-query
+        - mcp-health-check
   action:
     - key: hello-world-logger
       name: Log a message
@@ -30,9 +38,25 @@ modules:
           required: true
           description: |
             "The message that the user has requested be logged to Forge logs"
+    - key: mcp-query
+      name: Query MCP Server
+      function: mcpQuery
+      actionVerb: GET
+      description: Query the MCP server for module information
+    - key: mcp-health-check
+      name: MCP Health Check
+      function: mcpHealthCheck
+      actionVerb: GET
+      description: Check MCP server health status
   function:
     - key: messageLogger
       handler: index.messageLogger
+    - key: mcpQuery
+      handler: index.mcpQuery
+    - key: mcpHealthCheck
+      handler: index.mcpHealthCheck
+    - key: mcpTestPanel
+      handler: index.mcpTestPanel
 app:
   runtime:
     name: nodejs22.x
@@ -40,7 +64,7 @@ app:
     architecture: arm64
   storage:
     entities:
-      # ERP Context Entity
+      #  Context Entity
       - name: erp-context
         attributes:
           contextId:

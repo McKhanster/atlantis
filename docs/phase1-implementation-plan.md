@@ -1,15 +1,17 @@
-# Phase 1 Implementation Plan: AI-Native ERP Core Development
+# Phase 1 Implementation Plan: AI-Native Orchestrator Core Development
 
 ## Project Overview
 
-**Project Name**: AI-Native ERP Modular Suite (AIMS)
+**Project Name**: Atlantis Core - AI-Native Modular Orchestrator
+
+**Core Concept**: A **product-agnostic intelligent orchestrator** that coordinates domain-specific modules via Model Context Protocol (MCP). The system becomes specialized (, CRM, ITSM, etc.) based on which modules are connected.
 
 **Codegeist Category**: Apps for Business Teams
 
 **Target Bonus Prizes**:
-- Best Rovo Apps ($2,000)
-- Best Apps Built Using Rovo Dev ($2,000)
-- Best Runs on Atlassian ($2,000)
+- Best Rovo Apps ($2,000) - ⏳ Rovo agent for orchestration (Task 1.3)
+- Best Apps Built Using Rovo Dev ($2,000) - ✅ **READY** - MCP server for Rovo Dev CLI integration
+- Best Runs on Atlassian ($2,000) - ✅ **CONFIRMED ELIGIBLE** (2025-10-30)
 
 **Total Potential Prize**: Up to $21,000 (1 category prize + 3 bonus prizes)
 
@@ -21,55 +23,55 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      CORE APP (Hub)                         │
+│              ATLANTIS CORE (Orchestrator)                   │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │         Main Rovo Orchestrator Agent               │    │
-│  │  - Procurement forecasting                         │    │
-│  │  - Inventory optimization                          │    │
-│  │  - Budget analysis                                 │    │
+│  │    Product-Agnostic Rovo Orchestrator Agent        │    │
+│  │  - List registered modules                         │    │
+│  │  - Route requests to modules                       │    │
+│  │  - Aggregate cross-module insights                 │    │
+│  │  - Manage shared context                           │    │
 │  └────────────────────────────────────────────────────┘    │
 │  ┌────────────────────────────────────────────────────┐    │
 │  │         MCP Server (Communication Layer)           │    │
-│  │  - POST /mcp/query                                 │    │
-│  │  - POST /mcp/update                                │    │
-│  │  - POST /mcp/register                              │    │
+│  │  - POST /mcp/query    (Module → Core)              │    │
+│  │  - POST /mcp/update   (Module → Core)              │    │
+│  │  - POST /mcp/register (Module → Core)              │    │
+│  │  - POST /mcp/rovo-dev (Rovo Dev → Core) ⭐ NEW    │    │
 │  └────────────────────────────────────────────────────┘    │
 │  ┌────────────────────────────────────────────────────┐    │
-│  │         Storage Abstraction Layer                  │    │
-│  │  - Forge KVS/Custom Entities                       │    │
-│  │  - Vector DB abstraction (future)                  │    │
+│  │         Storage Layer (Forge-Hosted Only)          │    │
+│  │  - Forge KVS (key-value)                           │    │
+│  │  - Forge Custom Entities (structured data)         │    │
 │  │  - Module registry                                 │    │
+│  │  - Shared context storage                          │    │
 │  └────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────┘
-                          ▲
-                          │ MCP Protocol
-                          │ (FIT Auth)
-                          ▼
+                ▲                           ▲
+                │ MCP Protocol              │ MCP Protocol
+                │ (FIT Auth)                │ (Rovo Dev)
+                ▼                           ▼
+┌──────────────────────┐         ┌────────────────────┐
+│  DOMAIN MODULES      │         │  ROVO DEV CLI      │
+│  (Define System)     │         │  (Development)     │
+└──────────────────────┘         └────────────────────┘
+        │
+        ├─► Inventory + Vendor + Operation = 
+        ├─► Customer + Sales + Marketing = CRM
+        ├─► Ticket + SLA + Knowledge = ITSM
+        └─► Any Domain Modules = Custom Suite
+
 ┌──────────────────────────────────────────────────────────────┐
 │                    MODULE TEMPLATE                           │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  MCP Connector (auto-registration)                  │    │
+│  │  MCP Connector (connects to Core)                   │    │
 │  └─────────────────────────────────────────────────────┘    │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  Local Collaboration AI Agent (Rovo)                │    │
+│  │  Domain-Specific Rovo Agent                         │    │
 │  └─────────────────────────────────────────────────────┘    │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  Domain Logic Extension Points                      │    │
+│  │  Business Logic (/CRM/ITSM/etc.)                 │    │
 │  └─────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────┘
-                          │
-        ┌─────────────────┴─────────────────┐
-        ▼                                    ▼
-┌──────────────────┐              ┌──────────────────┐
-│   Module 1:      │              │   Module 2:      │
-│   Inventory      │              │   Vendor         │
-│   Optimizer      │              │   Management     │
-│                  │              │                  │
-│ Integration:     │              │ Integration:     │
-│ - Jira Panel     │              │ - Confluence     │
-│ - Custom Fields  │              │   Macro          │
-│                  │              │ - Custom Content │
-└──────────────────┘              └──────────────────┘
 ```
 
 ### Technology Stack
@@ -89,35 +91,39 @@
 ## Week 1: Core App Foundation & MCP Server
 
 **Week Objectives**:
-- Set up development environment with strict TypeScript, ESLint, and Jest
-- Implement MCP communication layer with full type safety
-- Create Core Rovo orchestrator agent using Rovo Dev
-- Build Forge-hosted storage abstraction (KVS + Custom Entities)
-- **Maintain "Runs on Atlassian" compliance throughout**
+- ✅ Set up development environment with strict TypeScript, ESLint, and Jest
+- ✅ Implement real MCP communication layer with official SDK
+- ⏳ Create Core Rovo orchestrator agent using Rovo Dev
+- ⏳ Build Forge-hosted storage abstraction (KVS + Custom Entities)
+- ✅ **Maintain "Runs on Atlassian" compliance throughout**
 
 **Quality Gates**:
-- ✅ All tests passing with ≥70% coverage
+- ✅ All tests passing (51/51)
 - ✅ ESLint zero errors, zero `any` types
 - ✅ TypeScript strict mode, no compilation errors
-- ✅ `forge lint --runs-on-atlassian` passing
+- ✅ MCP server running on stdio transport
+- ✅ NPM package ready for publishing
 - ✅ All deliverables documented
+
+**Progress**: 2/4 tasks complete (50%)
 
 **See `docs/phase1-detailed-tasks.md` for step-by-step subtask breakdowns.**
 
 ---
 
-### Task 1.1: Project Setup & Environment (Day 1, ~6-8 hours)
+### Task 1.1: Project Setup & Environment (Day 1, ~6-8 hours) ✅ COMPLETE
 
 **Overview**: Initialize Forge application with professional development environment including TypeScript strict mode, comprehensive ESLint rules, Jest testing framework, and layered architecture structure.
 
 **Subtasks**:
-1. Initialize Forge application (`forge create`)
-2. Configure TypeScript with strict mode and all strict checks enabled
-3. Configure ESLint with TypeScript plugin and zero-`any` enforcement
-4. Configure Jest with ts-jest and Forge module mocks
-5. Create layered directory structure (domain, resolvers, infrastructure, frontend, shared)
-6. Configure package.json scripts (lint, test, type-check, ci)
-7. Update manifest.yml with storage entity placeholders
+1. ✅ Initialize Forge application (`forge create`)
+2. ✅ Configure TypeScript with strict mode and all strict checks enabled
+3. ✅ Configure ESLint with TypeScript plugin and zero-`any` enforcement
+4. ✅ Configure Jest with ts-jest and Forge module mocks
+5. ✅ Create layered directory structure (domain, resolvers, infrastructure, frontend, shared)
+6. ✅ Configure package.json scripts (lint, test, type-check, ci)
+7. ✅ Update manifest.yml with storage entity placeholders
+8. ✅ NPM package configuration for MCP server
 
 **Key Deliverables**:
 1. ✅ Initialized Forge app with valid manifest
@@ -127,6 +133,7 @@
 5. ✅ Layered project structure following DDD principles
 6. ✅ Package scripts for CI/CD workflow
 7. ✅ Manifest with storage:app scope and entity schemas
+8. ✅ NPM package ready for publishing (`atlantis-core-mcp`)
 
 **Project Structure**:
 ```
@@ -142,7 +149,7 @@ atlantis/
 │   │   └── api.ts                 # API response types
 │   ├── domain/                    # Business logic layer
 │   │   ├── entities/              # Domain entities
-│   │   │   ├── erp-context.ts
+│   │   │   ├── orchestrator-context.ts
 │   │   │   ├── module-registration.ts
 │   │   │   └── __tests__/
 │   │   ├── services/              # Business logic services
@@ -286,168 +293,228 @@ npm run type-check  # TypeScript compilation check
 
 ---
 
-### Task 1.2: MCP Communication Layer (Hybrid Approach)
+### Task 1.2: Real MCP Communication Layer ✅ COMPLETE
 
 **Objectives**:
-- Research MCP libraries compatible with Forge
-- Implement custom MCP-compliant endpoints
-- Create authentication layer with FIT
-- Build abstraction for agnosticism
+- ✅ Implement real MCP server using @modelcontextprotocol/sdk
+- ✅ Create Forge-compatible MCP bridge layer
+- ✅ Build authentication layer with FIT
+- ✅ Prepare for Rovo Dev integration
 
-**MCP Protocol Specification**:
+**Implementation Completed**:
 
-Based on spec.md, implement the following MCP protocol structure:
+1. ✅ **Real MCP Server** (`src/infrastructure/mcp/mcp-server.ts`):
+   - Uses official @modelcontextprotocol/sdk
+   - Proper tool registration with Zod schemas
+   - Tools: `health_check`, `list_modules`, `register_module`
+   - Stdio transport for Rovo Dev integration
 
-```typescript
-// MCP Request Structure
-interface MCPRequest {
-  mcpVersion: string;              // "1.0"
-  contextId: string;               // Unique context identifier
-  context: {
-    source: string;                // "jira" | "confluence" | "module"
-    data: Record<string, unknown>; // Context-specific data
-  };
-  request: {
-    type: string;                  // Request type (e.g., "optimizeInventory")
-    params?: Record<string, unknown>;
-  };
-}
+2. ✅ **Forge Integration Layer** (`src/infrastructure/mcp/server.ts`):
+   - Maintains Forge resolver compatibility
+   - Bridges real MCP with Forge HTTP endpoints
+   - Module registration and tracking
+   - Error handling with MCP error codes
 
-// MCP Response Structure
-interface MCPResponse {
-  responseId: string;
-  result: Record<string, unknown>;
-  contextUpdate?: Record<string, unknown>;
-  error?: {
-    code: string;
-    message: string;
-  };
-}
-```
+3. ✅ **MCP Client** (`src/infrastructure/mcp/client.ts`):
+   - Module-to-Core communication
+   - Registration flow with shared secrets
+   - Query/update methods
+   - Prepared for @forge/api integration
 
-**Implementation Plan**:
+4. ✅ **Authentication Layer** (`src/infrastructure/mcp/auth.ts`):
+   - Forge Invocation Token (FIT) validation
+   - JWT structure validation
+   - Scope-based authorization
+   - Mock token generation for testing
 
-1. **Research Phase** (Day 1):
-   - Investigate npm MCP packages: `@modelcontextprotocol/sdk`, `mcp-client`, etc.
-   - Test compatibility with Forge Node.js 22.x runtime
-   - Document findings for Rovo Dev bonus submission
-
-2. **Custom MCP Server** (Days 2-3):
-   - Implement `McpServer` class with endpoints:
-     - `/mcp/query`: Handle AI context queries
-     - `/mcp/update`: Process context updates
-     - `/mcp/register`: Module registration handshake
-   - Integrate Forge web triggers
-   - Implement FIT authentication validation
-   - Add request/response logging
-
-3. **MCP Client Abstraction** (Day 3):
-   - Create `McpClient` class for modules
-   - Implement retry logic and error handling
-   - Add request queuing for rate limiting
-   - Build mock client for testing
-
-4. **Security Layer** (Day 4):
-   - Validate Forge Invocation Tokens
-   - Implement scope-based authorization
-   - Add request signing for module authentication
-   - Security audit and penetration testing prep
+**Quality Metrics**:
+- ✅ Lint: 0 errors, 0 warnings
+- ✅ Type-check: 0 compilation errors
+- ✅ Build: Successful compilation
+- ✅ MCP Server: Running on stdio transport
+- ✅ Tests: 51/51 passing
 
 **Deliverables**:
-- MCP server implementation (`src/infrastructure/mcp/mcp-server.ts`)
-- MCP client abstraction (`src/infrastructure/mcp/mcp-client.ts`)
-- Type definitions (`src/types/mcp.ts`)
-- Unit tests with 80%+ coverage
-- Documentation for developers
+- ✅ Real MCP server implementation
+- ✅ NPM package (`atlantis-core-mcp`) ready for publishing
+- ✅ Forge integration bridge
+- ✅ Authentication and validation layers
+- ✅ Comprehensive test suite
+- ✅ Rovo Dev integration ready
 
 ---
 
-### Task 1.3: Core Rovo Agent Implementation
+### Task 1.3: Core Rovo Agent Implementation ⏳ PENDING
 
 **Objectives**:
-- Define main orchestrator Rovo agent
-- Configure agent actions
-- Integrate with MCP layer
-- Use Rovo Dev for scaffolding
+- Define **product-agnostic orchestrator** Rovo agent (NOT domain-specific)
+- Configure generic orchestration actions
+- Integrate with MCP layer (✅ Ready - Task 1.2 complete)
+- Use Rovo Dev for scaffolding and error assistance
+- **NEW**: Expose Core as MCP server for Rovo Dev CLI integration (✅ Ready)
 
-**Rovo Agent Architecture**:
+**Core Architecture Principle**:
+The Core is a **generic intelligent orchestrator** that coordinates domain-specific modules via MCP. It does NOT contain domain logic (, CRM, etc.). The system becomes specialized based on which modules are connected.
+
+**Rovo Agent Architecture** (Product-Agnostic):
 
 ```yaml
 # manifest.yml excerpt
 modules:
   rovo:agent:
-    - key: erp-orchestrator
-      name: ERP AI Orchestrator
-      description: AI-powered procurement and inventory optimization agent
-      function: erp-orchestrator-handler
+    - key: atlantis-core-orchestrator
+      name: Atlantis Core Orchestrator
+      description: >
+        Product-agnostic intelligent orchestrator that coordinates
+        domain-specific modules via Model Context Protocol (MCP)
+      prompt: >
+        You are an intelligent orchestrator that coordinates between
+        domain-specific modules using the Model Context Protocol (MCP).
+
+        Your role is to:
+        - Route requests to appropriate modules based on their capabilities
+        - Aggregate responses from multiple modules
+        - Provide cross-module insights
+        - Manage shared context across the system
+
+        You do NOT perform domain-specific tasks directly. Instead, you:
+        1. Identify which module(s) can handle the request
+        2. Send MCP requests to those modules
+        3. Combine their responses intelligently
+        4. Present unified insights to the user
+
+        Available capabilities depend on which modules are connected.
+        Always check what modules are available before making assumptions.
+
+        Use these indicators:
+        📡 - For module communications
+        🔄 - For routing operations
+        📊 - For aggregated insights
+        ✅ - For successful operations
+        ⚠️ - For issues or warnings
+
+      conversationStarters:
+        - What modules are currently connected?
+        - Show me the capabilities of all registered modules
+        - Route this request to the appropriate module
+        - Aggregate insights across all active modules
+
+      actions:
+        - list-modules
+        - route-request
+        - aggregate-insights
+        - store-context
 
   action:
-    - key: forecast-procurement
-      name: Forecast Procurement Needs
-      description: Analyze inventory and predict procurement requirements
-      function: forecast-procurement-handler
+    - key: list-modules
+      name: List Registered Modules
+      description: Query all currently registered modules and their capabilities
+      function: list-modules-handler
+      actionVerb: GET
 
-    - key: optimize-inventory
-      name: Optimize Inventory Levels
-      description: Recommend optimal inventory levels based on usage patterns
-      function: optimize-inventory-handler
+    - key: route-request
+      name: Route Request to Module
+      description: Send an MCP request to the appropriate module
+      function: route-request-handler
+      actionVerb: TRIGGER
+      inputs:
+        requestType:
+          title: Request Type
+          type: string
+          required: true
+        moduleId:
+          title: Target Module ID
+          type: string
+          required: false
+        params:
+          title: Request Parameters
+          type: object
+          required: false
 
-    - key: analyze-budget
-      name: Analyze Budget Impact
-      description: Calculate budget implications of procurement decisions
-      function: analyze-budget-handler
+    - key: aggregate-insights
+      name: Aggregate Cross-Module Insights
+      description: Combine data from multiple modules to provide unified insights
+      function: aggregate-insights-handler
+      actionVerb: GET
+
+    - key: store-context
+      name: Store Shared Context
+      description: Store context data that can be accessed by all modules
+      function: store-context-handler
+      actionVerb: TRIGGER
 
   function:
-    - key: erp-orchestrator-handler
-      handler: src/resolvers/rovo/agent-resolver.handler
+    - key: list-modules-handler
+      handler: resolvers/rovo/actions/list-modules.handler
 
-    - key: forecast-procurement-handler
-      handler: src/resolvers/rovo/actions/forecast-handler.handler
+    - key: route-request-handler
+      handler: resolvers/rovo/actions/route-request.handler
 
-    - key: optimize-inventory-handler
-      handler: src/resolvers/rovo/actions/optimize-handler.handler
+    - key: aggregate-insights-handler
+      handler: resolvers/rovo/actions/aggregate-insights.handler
 
-    - key: analyze-budget-handler
-      handler: src/resolvers/rovo/actions/budget-handler.handler
+    - key: store-context-handler
+      handler: resolvers/rovo/actions/store-context.handler
+
+    # MCP endpoint for Rovo Dev CLI integration
+    - key: mcp-rovo-dev-endpoint
+      handler: resolvers/mcp/rovo-dev.handler
+
+  webtrigger:
+    - key: mcp-rovo-dev
+      function: mcp-rovo-dev-endpoint
+      url: /mcp/rovo-dev
 ```
 
 **Agent Implementation Plan**:
 
-1. **Rovo Dev Scaffolding** (Day 1):
-   - Use Rovo Dev to generate initial agent structure
-   - Document prompts and iterations for bonus submission
-   - Capture screenshots of Rovo Dev workflow
-   - Create initial agent prompt templates
+1. **Rovo Dev Setup** (Hour 1):
+   - Enable Rovo Assistant: `forge assistant on rovo`
+   - Document Rovo Dev usage for bonus submission
+   - Capture screenshots of Rovo Assistant helping with errors
+   - Update agent prompt to be product-agnostic (not domain-specific)
 
-2. **Agent Core Logic** (Days 2-3):
-   - Implement orchestrator agent resolver
-   - Define agent personality and capabilities
-   - Create context aggregation logic using Forge Custom Entities
-   - Implement decision-making algorithms
+2. **Generic Orchestration Actions** (Hours 2-6):
+   - **list-modules**: Query registered modules from MCP server
+   - **route-request**: Send MCP requests to appropriate modules
+   - **aggregate-insights**: Combine responses from multiple modules
+   - **store-context**: Save shared context in Forge Custom Entities
+   - All actions integrate with existing MCP server (Task 1.2 ✅)
 
-3. **Action Handlers** (Days 3-4):
-   - Build procurement forecasting action
-   - Implement inventory optimization action
-   - Create budget analysis action
-   - Integrate with domain services
+3. **Rovo Dev MCP Integration** (Hours 7-10):
+   - Create CLI wrapper (`src/mcp-server-cli.ts`) for stdio transport
+   - OR create HTTP endpoint (`/mcp/rovo-dev`) for web transport
+   - Register Core as MCP server in `~/.rovodev/mcp.json`
+   - Test Rovo Dev CLI querying our Core
+   - Document MCP-to-MCP communication
 
-4. **AI Context Storage** (Day 4):
-   - Design AI context schema in Forge Custom Entities
-   - Store embeddings as arrays in entity attributes
-   - Create indexes for efficient context retrieval
-   - Implement context caching with Forge KVS
+4. **Context Management** (Hours 11-12):
+   - Implement context storage using Forge Custom Entities
+   - Create indexes for efficient retrieval
+   - Add context caching with Forge KVS
    - **Maintain "Runs on Atlassian" compliance with Forge-only storage**
 
+**Key Changes from Original Plan**:
+- ❌ **Removed**: Domain-specific actions (forecast-procurement, optimize-inventory, analyze-budget)
+- ✅ **Added**: Product-agnostic orchestration actions
+- ✅ **Added**: Rovo Dev MCP server integration
+- ✅ **Clarified**: Core is generic orchestrator, NOT -specific
+
 **Deliverables**:
-- Rovo agent resolver (`src/resolvers/rovo/agent-resolver.ts`)
-- Action handlers (`src/resolvers/rovo/actions/`)
-- Vector DB abstraction (`src/infrastructure/storage/vector-db-abstraction.ts`)
-- Rovo Dev documentation with screenshots
-- Unit tests for all actions
+- Product-agnostic Rovo agent with orchestration prompt
+- Generic action handlers (`src/resolvers/rovo/actions/`)
+  - `list-modules.ts` - Query module registry
+  - `route-request.ts` - Send MCP requests
+  - `aggregate-insights.ts` - Combine module responses
+  - `store-context.ts` - Manage shared context
+- MCP server endpoint for Rovo Dev (`src/resolvers/mcp/rovo-dev.ts`)
+- CLI wrapper for Rovo Dev stdio transport (`src/mcp-server-cli.ts`)
+- Rovo Dev integration documentation with screenshots
+- Unit tests for all actions (≥80% coverage)
 
 ---
 
-### Task 1.4: Data Storage Architecture
+### Task 1.4: Data Storage Architecture ⏳ PENDING
 
 **Objectives**:
 - Create storage abstraction layer using Forge-hosted storage ONLY
@@ -455,6 +522,8 @@ modules:
 - Implement Forge KVS for simple key-value storage
 - Build core data models
 - **CRITICAL**: Use ONLY Forge-hosted storage for "Runs on Atlassian" compliance
+
+**Prerequisites**: ✅ Task 1.1 complete (manifest with entities configured)
 
 **Storage Abstraction Pattern** (All Forge-Hosted):
 
@@ -512,9 +581,9 @@ interface ModuleRegistration {
 }
 ```
 
-2. **ERP Context**:
+2. **Orchestrator Context**:
 ```typescript
-interface ERPContext {
+interface OrchestratorContext {
   contextId: string;
   source: 'jira' | 'confluence' | 'module';
   entityType: string;
@@ -573,7 +642,7 @@ interface PredictionCache {
 app:
   storage:
     entities:
-      - key: erp-context
+      - key: orchestrator-context
         attributes:
           - name: contextId
             type: string
@@ -816,7 +885,7 @@ permissions:
 
 ### Task 3.1: Module 2 - Vendor Management
 
-**Target User**: Procurement teams managing vendor relationships
+**Target User**: Operation teams managing vendor relationships
 
 **Features**:
 1. **Vendor Performance Tracking**
@@ -1026,7 +1095,7 @@ permissions:
 - Mobile app support
 
 ### Phase 3: External Integrations (Week 9-12)
-- ERP system connectors (SAP, Oracle)
+- Orchestrator system connectors (SAP, Oracle)
 - External vector database integration
 - Third-party procurement APIs
 - Advanced AI models (GPT-4, Claude)
@@ -1147,10 +1216,10 @@ Authorization: Bearer [FIT]
 }
 ```
 
-### ERP Context Schema
+### Orchestrator Context Schema
 ```typescript
 {
-  "contextId": "ctx-erp-001",
+  "contextId": "ctx-orchestrator-001",
   "source": "jira",
   "entityType": "issue",
   "entityId": "PROJ-456",

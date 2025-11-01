@@ -7,6 +7,9 @@
  */
 
 import { randomUUID } from 'crypto';
+// SDK imports available for future use
+// import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+// import { z } from 'zod';
 import {
   type MCPRequest,
   type MCPResponse,
@@ -20,6 +23,7 @@ import {
   validateModuleRegistration,
 } from './validation';
 import { MCPError } from '../../shared/errors/mcp-error';
+import { AtlantisMcpServer } from './mcp-server';
 
 /**
  * Handler function type for MCP requests
@@ -32,7 +36,7 @@ export type MCPRequestHandler = (
  * MCP Server for Forge
  * Handles incoming MCP requests and routes them to appropriate handlers
  */
-export class McpForgeServer {
+class McpForgeServer {
   private handlers: Map<MCPRequestType, MCPRequestHandler> = new Map();
   private registeredModules: Map<string, ModuleRegistrationRequest> = new Map();
 
@@ -235,10 +239,12 @@ export function createMcpServer(config: {
   name: string;
   version: string;
   endpoint: string;
-}): McpForgeServer {
-  const server = new McpForgeServer(config);
+}): AtlantisMcpServer {
+  const server = new AtlantisMcpServer();
   console.log(
     `[MCP Server] Created server: ${config.name} v${config.version} at ${config.endpoint}`
   );
   return server;
 }
+
+export { McpForgeServer, AtlantisMcpServer };

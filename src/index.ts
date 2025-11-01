@@ -1,12 +1,19 @@
+#!/usr/bin/env node
 /**
- * AI-Native ERP Core - Main Entry Point
- * Message Logger Function (Template)
+ * Atlantis Core MCP Server Entry Point
+ * Main executable for the MCP server
  */
 
-interface MessageLoggerPayload {
-  message: string;
+import { AtlantisMcpServer } from './infrastructure/mcp/mcp-server.js';
+
+async function main(): Promise<void> {
+  const server = new AtlantisMcpServer();
+  await server.start();
 }
 
-export function messageLogger(payload: MessageLoggerPayload): void {
-  console.log(`Logging message: ${payload.message}`);
-}
+// Always run when imported as CLI
+main().catch(console.error);
+
+// Export for programmatic use
+export { AtlantisMcpServer } from './infrastructure/mcp/mcp-server.js';
+export * from './types/index.js';

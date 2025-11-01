@@ -89,7 +89,7 @@ app:
     name: nodejs22.x
   storage:
     entities:
-      # ERP Context Entity
+      #  Context Entity
       - key: erp-context
         attributes:
           - name: contextId
@@ -344,7 +344,7 @@ export class ForgeStorageService implements IStorageService {
 import { IStorageService } from '../../infrastructure/storage/storage-abstraction';
 import { WhereConditions, Sort } from '@forge/kvs';
 
-export interface ERPContext {
+export interface Context {
   contextId: string;
   source: 'jira' | 'confluence' | 'module';
   entityType: string;
@@ -356,21 +356,21 @@ export interface ERPContext {
   tags: string[];
 }
 
-export class ERPContextRepository {
+export class ContextRepository {
   private readonly ENTITY_KEY = 'erp-context';
 
   constructor(private storage: IStorageService) {}
 
-  async create(context: ERPContext): Promise<void> {
+  async create(context: Context): Promise<void> {
     await this.storage.entitySet(this.ENTITY_KEY, context.contextId, context);
   }
 
-  async getById(contextId: string): Promise<ERPContext | null> {
-    return await this.storage.entityGet<ERPContext>(this.ENTITY_KEY, contextId);
+  async getById(contextId: string): Promise<Context | null> {
+    return await this.storage.entityGet<Context>(this.ENTITY_KEY, contextId);
   }
 
-  async findBySource(source: string, limit: number = 100): Promise<ERPContext[]> {
-    const result = await this.storage.query<ERPContext>(this.ENTITY_KEY, {
+  async findBySource(source: string, limit: number = 100): Promise<Context[]> {
+    const result = await this.storage.query<Context>(this.ENTITY_KEY, {
       index: 'by-source',
       where: WhereConditions.equals(source),
       sort: Sort.DESC,
@@ -380,8 +380,8 @@ export class ERPContextRepository {
     return result.results;
   }
 
-  async findByTags(tags: string[], limit: number = 100): Promise<ERPContext[]> {
-    const result = await this.storage.query<ERPContext>(this.ENTITY_KEY, {
+  async findByTags(tags: string[], limit: number = 100): Promise<Context[]> {
+    const result = await this.storage.query<Context>(this.ENTITY_KEY, {
       index: 'by-tags',
       where: WhereConditions.contains(tags),
       limit
@@ -393,9 +393,9 @@ export class ERPContextRepository {
   async findSimilarContexts(
     queryEmbedding: number[],
     topK: number = 10
-  ): Promise<ERPContext[]> {
+  ): Promise<Context[]> {
     // Get all contexts (or paginate for large datasets)
-    const result = await this.storage.query<ERPContext>(this.ENTITY_KEY, {
+    const result = await this.storage.query<Context>(this.ENTITY_KEY, {
       limit: 1000
     });
 

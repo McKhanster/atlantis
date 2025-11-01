@@ -1,0 +1,1 @@
+Always run "npm run type-check" after coding a file. Fix all errors before proceeding to the next file. 

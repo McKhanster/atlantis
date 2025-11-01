@@ -4,6 +4,15 @@
 **Prize Value**: $2,000 (Codegeist Bonus)
 **Badge**: Automatically applied to eligible apps on Atlassian Marketplace
 
+## ✅ ELIGIBILITY CONFIRMED
+
+**Status**: **ELIGIBLE** ✅
+**Verified**: 2025-10-30
+**Environment**: Development (v1.1.0)
+**Command**: `forge eligibility`
+
+> ✔ The version of your app [1.1.0] that's deployed to [development] is eligible for the Runs on Atlassian program.
+
 ## Core Requirements
 
 The "Runs on Atlassian" program has **3 mandatory requirements**:

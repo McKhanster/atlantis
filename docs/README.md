@@ -1,6 +1,6 @@
 # AIMS Documentation Index
 
-**AI-Native ERP Modular Suite (AIMS)** - Documentation Hub
+**AI-Native Orchestrator Modular Suite (AIMS)** - Documentation Hub
 
 ## Quick Navigation
 

@@ -14,8 +14,8 @@
 1. Navigate to project directory: `cd /home/esel/Documents/atlantis`
 2. Run: `forge create`
    - Select template: **Custom UI** (we'll use Forge UI Kit)
-   - App name: `ai-native-erp-core` or similar
-   - Description: "AI-Native ERP Modular Suite - Core Orchestrator"
+   - App name: `ai-native-orchestrator-core` or similar
+   - Description: "AI-Native Orchestrator Modular Suite - Core Orchestrator"
 3. Verify creation:
    ```bash
    ls -la  # Should see manifest.yml, package.json, src/
@@ -391,7 +391,7 @@ export interface MCPResponse {
  */
 
 // TODO: Implement domain types in Task 1.4
-export interface ERPContext {
+export interface Context {
   contextId: string;
   source: 'jira' | 'confluence' | 'module';
   entityType: string;
@@ -501,8 +501,8 @@ app:
     name: nodejs22.x
   storage:
     entities:
-      # ERP Context Entity (placeholder, will elaborate in Task 1.4)
-      - key: erp-context
+      # Orchestrator Context Entity (placeholder, will elaborate in Task 1.4)
+      - key: orchestrator-context
         attributes:
           - name: contextId
             type: string
@@ -683,7 +683,7 @@ export type MCPSource = 'jira' | 'confluence' | 'module';
 export type MCPRequestType =
   | 'optimizeInventory'
   | 'scoreVendor'
-  | 'forecastProcurement'
+  | 'forecastOperation'
   | 'analyzeBudget'
   | 'query'
   | 'update';

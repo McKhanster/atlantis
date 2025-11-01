@@ -2,7 +2,7 @@
  * Tests for MCP Server
  */
 
-import { createMcpServer, McpForgeServer } from '../server';
+import { McpForgeServer } from '../server';
 import { MCPErrorCode, type MCPRequest } from '../../../types/mcp';
 import { MCPError } from '../../../shared/errors/mcp-error';
 
@@ -10,7 +10,7 @@ describe('McpForgeServer', () => {
   let server: McpForgeServer;
 
   beforeEach(() => {
-    server = createMcpServer({
+    server = new McpForgeServer({
       name: 'test-server',
       version: '1.0.0',
       endpoint: 'https://test.forge.atlassian.net/mcp',

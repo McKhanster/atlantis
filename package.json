@@ -1,11 +1,22 @@
 {
-  "name": "ai-native-erp-core",
+  "name": "atlantis-core-mcp",
   "version": "0.1.0",
-  "description": "AI-Native ERP Modular Suite - Core Orchestrator with Rovo Agent",
-  "main": "src/index.ts",
-  "private": true,
+  "description": "AI-Native Orchestrator Core - MCP Server for Rovo Dev Integration",
+  "main": "dist/index.js",
+  "bin": {
+    "atlantis-mcp": "./dist/index.js"
+  },
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "registry": "node dist/tools/registry-server.js",
+    "logs": "node dist/tools/log-server.js",
+    "singleton": "node dist/tools/singleton-caller.js",
+    "prepublishOnly": "npm run build",
+    "start:all": "npm run registry & npm start",
+    "start:with-logs": "npm run logs & npm run registry & npm start",
+    "test:singleton": "npm run singleton",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "type-check": "tsc --noEmit",
@@ -28,6 +39,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.20.2"
+    "@modelcontextprotocol/sdk": "^1.20.2",
+    "zod": "^3.23.8"
   }
 }
