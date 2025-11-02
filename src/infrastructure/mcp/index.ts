@@ -12,11 +12,7 @@ export {
 } from './client.js';
 
 export {
-  validateMCPRequest,
-  validateMCPResponse,
   validateModuleRegistration,
   validateWithSchema,
-  assertValidMCPRequest,
-  assertValidMCPResponse,
   type ValidationResult,
 } from './validation.js';

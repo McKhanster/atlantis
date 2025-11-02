@@ -2,12 +2,12 @@
  * MCP-specific error classes
  */
 
-import { MCPErrorCode } from '../../types/mcp.js';
+import { AtlantisErrorCode } from '../../types/mcp.js';
 
 export class MCPError extends Error {
   constructor(
     message: string,
-    public readonly code: MCPErrorCode,
+    public readonly code: AtlantisErrorCode,
     public readonly details?: Record<string, unknown>
   ) {
     super(message);

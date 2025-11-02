@@ -4,7 +4,7 @@
 
 import { randomUUID } from 'crypto';
 import { CentralLogger } from '../mcp/central-logger.js';
-import { MCPRequest, MCPResponse } from '../../types/mcp.js';
+import { CallToolRequest, CallToolResult } from '../../types/mcp.js';
 
 export abstract class BaseTool {
   protected createdAt: string;
@@ -24,16 +24,18 @@ export abstract class BaseTool {
     this.callCount++;
   }
 
-  protected createMCPResponse(requestId: string, result: Record<string, unknown>,request: Record<string, unknown>, processingStartTime: number): MCPResponse {
-    const response : MCPResponse =  {
-      responseId: randomUUID(),
-      requestId,
-      mcpVersion: '1.0',
-      result,
-      metadata: {
-        timestamp: new Date().toISOString(),
-        processingTime: Date.now() - processingStartTime
-      }
+  protected createMCPResponse(requestId: string, result: Record<string, unknown>, request: Record<string, unknown>, processingStartTime: number): CallToolResult {
+    const response: CallToolResult = {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          ...result,
+          metadata: {
+            timestamp: new Date().toISOString(),
+            processingTime: Date.now() - processingStartTime
+          }
+        })
+      }]
     };
     this.logInteraction('MCP_RESPONSE', { response, request });
     return response;

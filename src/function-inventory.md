@@ -49,28 +49,28 @@
 - **SharedModuleRegistry.removeModule(moduleId)**: Removes module from file-based registry
 
 #### `validation.ts`
-- **validateMCPRequest(obj)**: Validates MCP request format
-- **validateMCPResponse(obj)**: Validates MCP response format
+- **validateCallToolRequest(obj)**: Validates CallToolRequest format
+- **validateCallToolResult(obj)**: Validates CallToolResult format
 - **validateModuleRegistration(obj)**: Validates module registration request
 - **validateWithSchema(schema, obj, errorMessage)**: Generic validation helper
-- **assertValidMCPRequest(obj)**: Throws MCPError if validation fails
-- **assertValidMCPResponse(obj)**: Throws MCPError if validation fails
+- **assertValidCallToolRequest(obj)**: Throws MCPError if validation fails
+- **assertValidCallToolResult(obj)**: Throws MCPError if validation fails
 
 ### Tools (`src/infrastructure/tools/`)
 
 #### `base-tool.ts`
 - **BaseTool.logInteraction(type, data)**: Logs tool interaction
 - **BaseTool.incrementCallCount()**: Increments tool call counter
-- **BaseTool.createMCPResponse(requestId, result, request, processingStartTime)**: Creates standardized MCP response
+- **BaseTool.createMCPResponse(requestId, result, request, processingStartTime)**: Creates standardized CallToolResult
 - **BaseTool.getBaseStatus()**: Returns tool status information
 
 #### `health-check-tool.ts`
 - **HealthCheckTool.getInstance()**: Singleton pattern for health check tool
-- **HealthCheckTool.execute(requestId, data, req)**: Executes health check and returns MCP response
+- **HealthCheckTool.execute(requestId, data, req)**: Executes health check and returns CallToolResult
 
 #### `list-modules-tool.ts`
 - **ListModulesTool.getInstance()**: Singleton pattern for list modules tool
-- **ListModulesTool.execute(requestId, data)**: Executes module listing and returns MCP response
+- **ListModulesTool.execute(requestId, data)**: Executes module listing and returns CallToolResult
 
 ## Shared Utilities (`src/shared/`)
 

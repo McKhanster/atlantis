@@ -5,7 +5,7 @@
 import { BaseTool } from './base-tool.js';
 import { HttpModuleRegistry } from '../mcp/http-registry.js';
 import { ModuleInfo } from '../mcp/mcp-server.js';
-import { MCPResponse } from '../../types/mcp.js';
+import { CallToolResult } from '../../types/mcp.js';
 
 export class ListModulesTool extends BaseTool {
   private static instance: ListModulesTool;
@@ -23,7 +23,7 @@ export class ListModulesTool extends BaseTool {
     return ListModulesTool.instance;
   }
 
-  async execute(requestId: string = 'list-modules', data: Record<string, unknown>): Promise<MCPResponse> {
+  async execute(requestId: string = 'list-modules', data: Record<string, unknown>): Promise<CallToolResult> {
     const startTime = Date.now();
     this.incrementCallCount();
     

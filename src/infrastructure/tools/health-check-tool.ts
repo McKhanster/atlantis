@@ -3,7 +3,7 @@
  */
 
 import { BaseTool } from './base-tool.js';
-import { MCPResponse } from '../../types/mcp.js';
+import { CallToolResult } from '../../types/mcp.js';
 
 export class HealthCheckTool extends BaseTool {
   private static instance: HealthCheckTool;
@@ -19,7 +19,7 @@ export class HealthCheckTool extends BaseTool {
     return HealthCheckTool.instance;
   }
 
-  async execute(requestId: string = 'health-check', data: Record<string, unknown>, req: Record<string, unknown>): Promise<MCPResponse> {
+  async execute(requestId: string = 'health-check', data: Record<string, unknown>, req: Record<string, unknown>): Promise<CallToolResult> {
     const startTime = Date.now();
     this.incrementCallCount();
     

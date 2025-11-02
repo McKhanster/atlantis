@@ -5,13 +5,11 @@
 
 import { z } from 'zod';
 import {
-  MCPRequestSchema,
-  MCPResponseSchema,
   ModuleRegistrationRequestSchema,
-  type MCPRequest,
-  type MCPResponse,
   type ModuleRegistrationRequest,
-  MCPErrorCode,
+  AtlantisErrorCode,
+  CallToolRequest,
+  CallToolResult,
 } from '../../types/mcp.js';
 import { MCPError as MCPErrorClass } from '../../shared/errors/mcp-error.js';
 
@@ -19,64 +17,50 @@ export interface ValidationResult<T> {
   success: boolean;
   data?: T;
   error?: {
-    code: MCPErrorCode;
+    code: AtlantisErrorCode;
     message: string;
     details?: Record<string, unknown>;
   };
 }
 
 /**
- * Validates an MCP request
+ * Validates a CallToolRequest
  */
-export function validateMCPRequest(obj: unknown): ValidationResult<MCPRequest> {
-  const result = MCPRequestSchema.safeParse(obj);
-
-  if (result.success) {
+export function validateCallToolRequest(obj: unknown): ValidationResult<CallToolRequest> {
+  if (typeof obj === 'object' && obj !== null && 'method' in obj && 'params' in obj) {
     return {
       success: true,
-      data: result.data,
+      data: obj as CallToolRequest,
     };
   }
 
   return {
     success: false,
     error: {
-      code: MCPErrorCode.BAD_REQUEST,
-      message: 'Invalid MCP request format',
-      details: {
-        issues: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-        })),
-      },
+      code: AtlantisErrorCode.BAD_REQUEST,
+      message: 'Invalid CallToolRequest format',
+      details: { received: obj },
     },
   };
 }
 
 /**
- * Validates an MCP response
+ * Validates a CallToolResult
  */
-export function validateMCPResponse(obj: unknown): ValidationResult<MCPResponse> {
-  const result = MCPResponseSchema.safeParse(obj);
-
-  if (result.success) {
+export function validateCallToolResult(obj: unknown): ValidationResult<CallToolResult> {
+  if (typeof obj === 'object' && obj !== null && 'content' in obj) {
     return {
       success: true,
-      data: result.data,
+      data: obj as CallToolResult,
     };
   }
 
   return {
     success: false,
     error: {
-      code: MCPErrorCode.INTERNAL_ERROR,
-      message: 'Invalid MCP response format',
-      details: {
-        issues: result.error.issues.map((issue) => ({
-          path: issue.path.join('.'),
-          message: issue.message,
-        })),
-      },
+      code: AtlantisErrorCode.INTERNAL_ERROR,
+      message: 'Invalid CallToolResult format',
+      details: { received: obj },
     },
   };
 }
@@ -99,10 +83,10 @@ export function validateModuleRegistration(
   return {
     success: false,
     error: {
-      code: MCPErrorCode.BAD_REQUEST,
+      code: AtlantisErrorCode.BAD_REQUEST,
       message: 'Invalid module registration request',
       details: {
-        issues: result.error.issues.map((issue) => ({
+        issues: result.error.issues.map((issue: any) => ({
           path: issue.path.join('.'),
           message: issue.message,
         })),
@@ -132,10 +116,10 @@ export function validateWithSchema<T>(
   return {
     success: false,
     error: {
-      code: MCPErrorCode.BAD_REQUEST,
+      code: AtlantisErrorCode.BAD_REQUEST,
       message: errorMessage,
       details: {
-        issues: result.error.issues.map((issue) => ({
+        issues: result.error.issues.map((issue: any) => ({
           path: issue.path.join('.'),
           message: issue.message,
         })),
@@ -146,10 +130,9 @@ export function validateWithSchema<T>(
 
 /**
  * Throws an MCPError if validation fails
- * Useful for validation in request handlers
  */
-export function assertValidMCPRequest(obj: unknown): asserts obj is MCPRequest {
-  const validation = validateMCPRequest(obj);
+export function assertValidCallToolRequest(obj: unknown): asserts obj is CallToolRequest {
+  const validation = validateCallToolRequest(obj);
   if (!validation.success) {
     throw new MCPErrorClass(
       validation.error!.message,
@@ -162,8 +145,8 @@ export function assertValidMCPRequest(obj: unknown): asserts obj is MCPRequest {
 /**
  * Throws an MCPError if validation fails
  */
-export function assertValidMCPResponse(obj: unknown): asserts obj is MCPResponse {
-  const validation = validateMCPResponse(obj);
+export function assertValidCallToolResult(obj: unknown): asserts obj is CallToolResult {
+  const validation = validateCallToolResult(obj);
   if (!validation.success) {
     throw new MCPErrorClass(
       validation.error!.message,

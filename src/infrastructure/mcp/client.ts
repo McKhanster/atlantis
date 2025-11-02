@@ -7,15 +7,15 @@
 
 import { randomUUID } from 'crypto';
 import {
-  type MCPRequest,
-  type MCPResponse,
-  type MCPRequestType,
-  type MCPContext,
+  type AtlantisRequestType,
+  type AtlantisContext,
   type ModuleRegistrationRequest,
   type ModuleRegistrationResponse,
-  MCPErrorCode,
+  AtlantisErrorCode,
+  CallToolRequest,
+  CallToolResult,
 } from '../../types/mcp.js';
-import { validateMCPResponse } from './validation.js';
+import { validateCallToolResult } from './validation.js';
 import { MCPError } from '../../shared/errors/mcp-error.js';
 
 export interface MCPClientConfig {
@@ -72,7 +72,7 @@ export class McpForgeClient {
       } else {
         throw new MCPError(
           'Module registration failed',
-          MCPErrorCode.INTERNAL_ERROR
+          AtlantisErrorCode.INTERNAL_ERROR
         );
       }
     } catch (error) {
@@ -85,32 +85,28 @@ export class McpForgeClient {
    * Send an MCP request to the Core server
    */
   async sendRequest(
-    type: MCPRequestType,
-    context: MCPContext,
+    type: AtlantisRequestType,
+    context: AtlantisContext,
     params?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
     if (!this.registered) {
       throw new MCPError(
         'Module not registered. Call register() first.',
-        MCPErrorCode.UNAUTHORIZED
+        AtlantisErrorCode.UNAUTHORIZED
       );
     }
 
     const requestId = randomUUID();
-    const request: MCPRequest = {
-      mcpVersion: '1.0',
-      requestId,
-      contextId: `${this.config.moduleInfo.moduleId}-${Date.now()}`,
-      context,
-      request: {
-        type,
-        params,
+    const request: CallToolRequest = {
+      method: 'tools/call',
+      params: {
+        name: type,
+        arguments: {
+          context,
+          params,
+          auth: this.sharedSecret,
+        },
       },
-      auth: this.sharedSecret
-        ? {
-            token: this.sharedSecret,
-          }
-        : undefined,
     };
 
     console.log(
@@ -122,13 +118,16 @@ export class McpForgeClient {
 
       if (response.error) {
         throw new MCPError(
-          response.error.message,
-          response.error.code as MCPErrorCode,
-          response.error.details
+          'Tool execution failed',
+          AtlantisErrorCode.INTERNAL_ERROR
         );
       }
 
-      return response.result || {};
+      const textContent = response.content?.[0];
+      if (textContent && 'text' in textContent && typeof textContent.text === 'string') {
+        return JSON.parse(textContent.text) as Record<string, unknown>;
+      }
+      return {} as Record<string, unknown>;
     } catch (error) {
       console.error('[MCP Client] Request failed:', error);
       throw error;
@@ -139,7 +138,7 @@ export class McpForgeClient {
    * Query the Core for AI insights
    */
   async query(
-    context: MCPContext,
+    context: AtlantisContext,
     params?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
     return this.sendRequest('query', context, params);
@@ -149,7 +148,7 @@ export class McpForgeClient {
    * Update context in the Core
    */
   async update(
-    context: MCPContext,
+    context: AtlantisContext,
     params?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
     return this.sendRequest('update', context, params);
@@ -165,15 +164,15 @@ export class McpForgeClient {
   /**
    * Send MCP request over HTTP and validate response
    */
-  private async sendMCPRequest(request: MCPRequest): Promise<MCPResponse> {
+  private async sendMCPRequest(request: CallToolRequest): Promise<CallToolResult> {
     try {
-      const response = await this.sendHttpRequest<MCPResponse>(
+      const response = await this.sendHttpRequest<CallToolResult>(
         `${this.config.coreEndpoint}/query`,
         request
       );
 
       // Validate response structure
-      const validation = validateMCPResponse(response);
+      const validation = validateCallToolResult(response);
       if (!validation.success) {
         throw new MCPError(
           validation.error!.message,
@@ -190,7 +189,7 @@ export class McpForgeClient {
 
       throw new MCPError(
         error instanceof Error ? error.message : 'Unknown error occurred',
-        MCPErrorCode.INTERNAL_ERROR
+        AtlantisErrorCode.INTERNAL_ERROR
       );
     }
   }

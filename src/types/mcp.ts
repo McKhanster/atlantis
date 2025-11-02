@@ -1,22 +1,41 @@
 /**
  * MCP Protocol Type Definitions
- * Model Context Protocol for module-to-core communication
+ * Official Model Context Protocol types from @modelcontextprotocol/sdk
  *
- * This file defines custom MCP types that extend the standard MCP SDK
- * for our -specific use cases while maintaining compatibility with
- * @modelcontextprotocol/sdk v1.20.2
+ * Re-exports official MCP types and adds Atlantis-specific extensions
+ * Compatible with @modelcontextprotocol/sdk v1.20.2
  */
 
 import { z } from 'zod';
 
-// Version and source enums
-export type MCPVersion = '1.0';
+// Re-export official MCP types
+export {
+  CallToolRequest,
+  CallToolResult,
+  GetPromptRequest,
+  GetPromptResult,
+  ListPromptsRequest,
+  ListPromptsResult,
+  ListResourcesRequest,
+  ListResourcesResult,
+  ListToolsRequest,
+  ListToolsResult,
+  ReadResourceRequest,
+  ReadResourceResult,
+  JSONRPCRequest,
+  JSONRPCResponse,
+  JSONRPCError,
+  Tool,
+  Prompt,
+  Resource,
+  TextContent,
+  ImageContent,
+  EmbeddedResource,
+} from '@modelcontextprotocol/sdk/types.js';
+
+// Atlantis-specific extensions
 export type MCPSource = 'jira' | 'confluence' | 'module';
-export type MCPRequestType =
-  | 'optimizeInventory'
-  | 'scoreVendor'
-  | 'forecastOperation'
-  | 'analyzeBudget'
+export type AtlantisRequestType =
   | 'query'
   | 'update'
   | 'register'
@@ -24,13 +43,9 @@ export type MCPRequestType =
   | 'broadcast'
   | 'connect';
 
-// Zod schemas for validation
+// Zod schemas for Atlantis extensions
 export const MCPSourceSchema = z.enum(['jira', 'confluence', 'module']);
-export const MCPRequestTypeSchema = z.enum([
-  'optimizeInventory',
-  'scoreVendor',
-  'forecastOperation',
-  'analyzeBudget',
+export const AtlantisRequestTypeSchema = z.enum([
   'query',
   'update',
   'register',
@@ -39,8 +54,7 @@ export const MCPRequestTypeSchema = z.enum([
   'connect',
 ]);
 
-// Zod schemas for request/response validation
-export const MCPContextSchema = z.object({
+export const AtlantisContextSchema = z.object({
   source: MCPSourceSchema,
   data: z.record(z.unknown()),
   metadata: z
@@ -52,66 +66,21 @@ export const MCPContextSchema = z.object({
     .optional(),
 });
 
-export const MCPRequestSchema = z.object({
-  mcpVersion: z.literal('1.0'),
-  requestId: z.string().uuid(),
-  contextId: z.string(),
-  context: MCPContextSchema,
-  request: z.object({
-    type: MCPRequestTypeSchema,
-    params: z.record(z.unknown()).optional(),
-  }),
-  auth: z
-    .object({
-      token: z.string(),
-    })
-    .optional(),
-});
+// Atlantis-specific types
+export type AtlantisContext = z.infer<typeof AtlantisContextSchema>;
 
-export const MCPErrorSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  details: z.record(z.unknown()).optional(),
-});
-
-export const MCPResponseSchema = z.object({
-  responseId: z.string().uuid(),
-  requestId: z.string().uuid(),
-  mcpVersion: z.literal('1.0'),
-  result: z.record(z.unknown()).optional(),
-  contextUpdate: z.record(z.unknown()).optional(),
-  error: MCPErrorSchema.optional(),
-  metadata: z
-    .object({
-      timestamp: z.string().datetime(),
-      processingTime: z.number(),
-    })
-    .optional(),
-});
-
-// TypeScript interfaces inferred from schemas
-export type MCPContext = z.infer<typeof MCPContextSchema>;
-export type MCPRequest = z.infer<typeof MCPRequestSchema>;
-export type MCPResponse = z.infer<typeof MCPResponseSchema>;
-export type MCPError = z.infer<typeof MCPErrorSchema>;
-
-export enum MCPErrorCode {
-  BAD_REQUEST = 'MCP_400',
-  UNAUTHORIZED = 'MCP_401',
-  FORBIDDEN = 'MCP_403',
-  NOT_FOUND = 'MCP_404',
-  INTERNAL_ERROR = 'MCP_500',
-  SERVICE_UNAVAILABLE = 'MCP_503',
+export enum AtlantisErrorCode {
+  BAD_REQUEST = 'ATLANTIS_400',
+  UNAUTHORIZED = 'ATLANTIS_401',
+  FORBIDDEN = 'ATLANTIS_403',
+  NOT_FOUND = 'ATLANTIS_404',
+  INTERNAL_ERROR = 'ATLANTIS_500',
+  SERVICE_UNAVAILABLE = 'ATLANTIS_503',
 }
 
-// Type guards using Zod validation
-export function isMCPRequest(obj: unknown): obj is MCPRequest {
-  const result = MCPRequestSchema.safeParse(obj);
-  return result.success;
-}
-
-export function isMCPResponse(obj: unknown): obj is MCPResponse {
-  const result = MCPResponseSchema.safeParse(obj);
+// Type guards for Atlantis extensions
+export function isAtlantisContext(obj: unknown): obj is AtlantisContext {
+  const result = AtlantisContextSchema.safeParse(obj);
   return result.success;
 }
 
