@@ -4,7 +4,7 @@
 
 import { BaseTool } from './base-tool.js';
 import { HttpModuleRegistry } from '../mcp/http-registry.js';
-import { ModuleInfo } from '../mcp/mcp-server.js';
+import { ModuleInfo } from '../mcp/mcpServe.js';
 import { CallToolResult } from '../../types/mcp.js';
 
 export class ListModulesTool extends BaseTool {

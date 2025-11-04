@@ -11,15 +11,13 @@
   "scripts": {
     "build": "npm run clean && tsc",
     "start": "node dist/index.js",
-    "start:a2a": "node dist/start-a2a.js",
     "registry": "node dist/tools/registry-server.js",
-    "logs": "node dist/tools/log-server.js",
+    "logs": "node dist/infrastructure/mcp/central-logger.js",
     "singleton": "node dist/tools/singleton-caller.js",
     "prepublishOnly": "npm run build",
-    "start:all": "npm run start & npm run start:a2a & npm run logs",
+    "start:all": "npm run logs & npm run start",
     "start:with-logs": "npm run logs & npm run registry & npm start",
     "test:singleton": "npm run singleton",
-    "a2a:test": "npx tsx test/a2a-test-server.ts",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
     "type-check": "tsc --noEmit",
@@ -32,6 +30,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.2",
@@ -42,9 +41,11 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@a2a-js/sdk": "^0.3.4",
+
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@types/uuid": "^10.0.0",
+    "ajv": "^8.17.1",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
     "uuid": "^13.0.0",
     "zod": "^3.23.8"

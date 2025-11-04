@@ -7,6 +7,28 @@
 
 ## Infrastructure Layer
 
+### Core Modules (`src/infrastructure/`)
+
+#### `session-data.ts`
+- **SessionData.getInstance()**: Singleton pattern for session data management
+- **getSessions()**: Returns sessions map
+- **setSessions(sessions)**: Sets sessions map
+- **getSession(key)**: Gets session by key
+- **setSession(key, value)**: Sets session value
+- **hasSession(key)**: Checks if session exists
+- **deleteSession(key)**: Deletes session by key
+- **clearSessions()**: Clears all sessions
+
+#### `chat.ts`
+- **Chat.getInstance()**: Singleton pattern for chat data management
+- **getChats()**: Returns chats map
+- **setChats(chats)**: Sets chats map
+- **getChat(key)**: Gets chat by key
+- **setChat(key, value)**: Sets chat value
+- **hasChat(key)**: Checks if chat exists
+- **deleteChat(key)**: Deletes chat by key
+- **clearChats()**: Clears all chats
+
 ### MCP Communication (`src/infrastructure/mcp/`)
 
 #### `auth.ts`
@@ -134,7 +156,7 @@
 
 ## Summary
 
-**Total Functions**: 55 functions across 20 files
+**Total Functions**: 69 functions across 22 files
 **Architecture**: Layered DDD with Infrastructure, Domain, and Shared layers
 **Key Patterns**: Singleton pattern, Factory pattern, Validation pattern
 **Protocol Support**: MCP (Model Context Protocol) + A2A (Agent-to-Agent) with Forge integration
