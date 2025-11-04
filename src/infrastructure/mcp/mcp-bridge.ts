@@ -374,9 +374,14 @@ export class McpBridge {
         ? this.agent1Server
         : this.agent2Server;
 
+      // Extract params from message if it's a request
+      const messageData = 'params' in bridgeMessage.message
+        ? bridgeMessage.message.params
+        : bridgeMessage.message;
+
       await targetServer.sendLoggingMessage({
         level: 'info',
-        data: bridgeMessage.message.params || bridgeMessage.message,
+        data: messageData,
         logger: `bridge-${bridgeMessage.fromAgentId}`
       });
 
