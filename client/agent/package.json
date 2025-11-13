@@ -1,0 +1,28 @@
+{
+  "name": "@autoninja/random-agent",
+  "version": "1.0.0",
+  "description": "Random Number Agent - Connects to MCP Hub and replies with random numbers",
+  "main": "dist/agent.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/agent.js",
+    "dev": "tsc && node dist/agent.js",
+    "watch": "tsc --watch"
+  },
+  "keywords": ["mcp", "agent", "random"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "eventsource": "^3.0.2",
+    "node-fetch": "^3.3.2",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "@types/eventsource": "^1.1.15",
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.7.2"
+  }
+}
