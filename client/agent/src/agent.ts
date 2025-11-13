@@ -4,7 +4,7 @@
  * Connects to MCP Hub, waits for messages, and replies with random numbers
  */
 
-import EventSource from 'eventsource';
+import { EventSource } from 'eventsource';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -100,7 +100,7 @@ class RandomAgent {
         // Just a keepalive, ignore
       });
 
-      this.eventSource.onerror = (error) => {
+      this.eventSource.onerror = (error: any) => {
         if (this.isRunning) {
           console.error(`❌ ${this.agentId} SSE error: ${error}`);
           console.log(`🔄 ${this.agentId} reconnecting in 2s...`);
