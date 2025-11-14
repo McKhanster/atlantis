@@ -21,6 +21,7 @@ interface MessageData {
 class SimpleCLIClient {
   private hubUrl: string;
   private clientId: string;
+  private sessionId?: string;
   private isRunning: boolean = false;
   private eventSource?: EventSource;
 
@@ -44,21 +45,26 @@ class SimpleCLIClient {
 
   private async register(): Promise<void> {
     try {
-      // MCP initialize handshake
+      // MCP initialize handshake using JSON-RPC 2.0
       const initRequest = {
-        protocolVersion: '2024-11-05',
-        capabilities: {},
-        clientInfo: {
-          name: this.clientId,
-          type: 'cli_client',
-          version: '1.0.0',
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: {
+            name: this.clientId,
+            version: '1.0.0',
+          },
         },
       };
 
-      const response = await fetch(`${this.hubUrl}/mcp/initialize`, {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
         },
         body: JSON.stringify(initRequest),
       });
@@ -67,7 +73,14 @@ class SimpleCLIClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log(`✅ Registered as: ${this.clientId}\n`);
+      // Get session ID from response headers
+      this.sessionId = response.headers.get('mcp-session-id') || undefined;
+
+      if (!this.sessionId) {
+        throw new Error('No session ID received from hub');
+      }
+
+      console.log(`✅ Registered as: ${this.clientId} (session: ${this.sessionId})\n`);
     } catch (e) {
       console.error(`❌ Registration failed: ${e}`);
       throw e;
@@ -75,40 +88,87 @@ class SimpleCLIClient {
   }
 
   private listenSSE(): void {
-    const sseUrl = `${this.hubUrl}/mcp/sse/${this.clientId}`;
+    if (!this.sessionId) {
+      console.error('❌ Cannot listen for SSE without session ID');
+      return;
+    }
 
-    const connectSSE = () => {
-      if (!this.isRunning) return;
+    // Note: EventSource doesn't support custom headers
+    // For production, use fetch with SSE support or a library that supports headers
+    // For now, this is a simplified implementation
+    this.connectSSEWithFetch();
+  }
 
-      this.eventSource = new EventSource(sseUrl);
+  private async connectSSEWithFetch(): Promise<void> {
+    if (!this.sessionId) return;
 
-      this.eventSource.onopen = () => {
-        // Connection opened
-      };
+    try {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
+        method: 'GET',
+        headers: {
+          Accept: 'text/event-stream',
+          'Mcp-Session-Id': this.sessionId,
+        },
+      });
 
-      this.eventSource.addEventListener('message', (event: any) => {
-        try {
-          const messageData = JSON.parse(event.data) as MessageData;
-          this.displayIncomingMessage(messageData);
-        } catch (e) {
-          console.error('Error parsing message:', e);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Read SSE stream using node-fetch's body methods
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      let buffer = '';
+
+      // Listen for data chunks
+      response.body.on('data', (chunk: Buffer) => {
+        if (!this.isRunning) return;
+
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.substring(6);
+            try {
+              const messageData = JSON.parse(data);
+              // Check if this is a notification with our expected format
+              if (messageData.method === 'notifications/message') {
+                this.displayIncomingMessage(messageData);
+              }
+            } catch (e) {
+              // Ignore parse errors for non-JSON data like keepalive
+            }
+          }
         }
       });
 
-      this.eventSource.addEventListener('keepalive', () => {
-        // Ignore keepalives
-      });
-
-      this.eventSource.onerror = (error: any) => {
+      response.body.on('end', () => {
         if (this.isRunning) {
-          // Silently reconnect
-          this.eventSource?.close();
-          setTimeout(connectSSE, 2000);
+          console.log(`\n🔄 SSE stream ended, reconnecting in 2s...\n`);
+          setTimeout(() => this.connectSSEWithFetch(), 2000);
         }
-      };
-    };
+      });
 
-    connectSSE();
+      response.body.on('error', (error: Error) => {
+        if (this.isRunning) {
+          console.error(`\n❌ SSE error: ${error}`);
+          console.log(`🔄 Reconnecting in 2s...\n`);
+          setTimeout(() => this.connectSSEWithFetch(), 2000);
+        }
+      });
+    } catch (e) {
+      if (this.isRunning) {
+        console.error(`\n❌ SSE error: ${e}`);
+        console.log(`🔄 Reconnecting in 2s...\n`);
+        setTimeout(() => this.connectSSEWithFetch(), 2000);
+      }
+    }
   }
 
   private displayIncomingMessage(messageData: MessageData): void {
@@ -130,6 +190,10 @@ class SimpleCLIClient {
 
   async listAgents(): Promise<void> {
     try {
+      if (!this.sessionId) {
+        throw new Error('No session ID - client not connected');
+      }
+
       const request = {
         jsonrpc: '2.0',
         id: `req_${uuidv4().substring(0, 8)}`,
@@ -140,10 +204,12 @@ class SimpleCLIClient {
         },
       };
 
-      const response = await fetch(`${this.hubUrl}/mcp/tools/call`, {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+          'Mcp-Session-Id': this.sessionId,
         },
         body: JSON.stringify(request),
       });
@@ -185,6 +251,10 @@ class SimpleCLIClient {
     payload: Record<string, any>
   ): Promise<any> {
     try {
+      if (!this.sessionId) {
+        throw new Error('No session ID - client not connected');
+      }
+
       const request = {
         jsonrpc: '2.0',
         id: `req_${uuidv4().substring(0, 8)}`,
@@ -200,10 +270,12 @@ class SimpleCLIClient {
         },
       };
 
-      const response = await fetch(`${this.hubUrl}/mcp/tools/call`, {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+          'Mcp-Session-Id': this.sessionId,
         },
         body: JSON.stringify(request),
       });
@@ -241,6 +313,20 @@ class SimpleCLIClient {
 
     if (this.eventSource) {
       this.eventSource.close();
+    }
+
+    // Close MCP session
+    if (this.sessionId) {
+      try {
+        await fetch(`${this.hubUrl}/mcp`, {
+          method: 'DELETE',
+          headers: {
+            'Mcp-Session-Id': this.sessionId,
+          },
+        });
+      } catch (e) {
+        // Ignore errors during disconnect
+      }
     }
 
     console.log('\n👋 Disconnected from hub\n');
