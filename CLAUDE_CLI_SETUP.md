@@ -27,11 +27,7 @@ If the file doesn't exist, create it.
 
 ## Step 2: Add Hub Configuration
 
-You can connect using **stdio** (local) or **HTTP/SSE** (local or remote) transport.
-
-### Option A: stdio Transport (Recommended for Local)
-
-Best for single local client, lowest latency.
+Claude CLI/Desktop **only supports stdio transport** via the `command` configuration. Add this to your config file:
 
 ```json
 {
@@ -51,54 +47,14 @@ Best for single local client, lowest latency.
 
 **Important**: Replace `/home/user/atlantis` with the actual path to your atlantis directory!
 
-### Option B: HTTP/SSE Transport (Works with Remote Hub)
+### What About HTTP/SSE Transport?
 
-Best for connecting to an already-running hub instance (local or remote).
+The hub supports HTTP/SSE transport, but **Claude CLI/Desktop cannot use it**. The HTTP/SSE endpoints are for:
+- Custom agents (like the random agent)
+- Web applications
+- Other MCP clients
 
-**First, start the hub in HTTP mode:**
-```bash
-cd /home/user/atlantis
-./scripts/start-hub-system.sh hub
-```
-
-**Then add this config:**
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://localhost:8000/sse"
-    }
-  }
-}
-```
-
-For a remote hub, change the URL:
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://your-hub-server:8000/sse"
-    }
-  }
-}
-```
-
-### Which Transport Should I Use?
-
-| Feature | stdio | HTTP/SSE |
-|---------|-------|----------|
-| **Latency** | <0.1ms | 0.5-2ms (local), higher for remote |
-| **Throughput** | 100K+ msg/sec | 10K-50K msg/sec |
-| **Use Case** | Single local client | Multiple clients or remote access |
-| **Debugging** | Harder | Easier (curl, browser tools) |
-| **Setup** | Simpler | Need to start hub separately |
-| **Clients** | One per hub instance | Unlimited |
-
-**Recommendation**:
-- Use **stdio** if you're the only client and hub is local
-- Use **HTTP/SSE** if you need remote access or multiple clients
+Claude CLI/Desktop spawns the hub as a subprocess and communicates via stdio only.
 
 ### How to Find Your Path
 
@@ -311,7 +267,7 @@ Here are the connected agents:
 
 ## Complete Example Config
 
-### Example 1: Multiple MCP Servers (stdio)
+### Multiple MCP Servers
 
 ```json
 {
@@ -335,67 +291,16 @@ Here are the connected agents:
 
 Now Claude has access to both the hub AND filesystem tools!
 
-### Example 2: HTTP/SSE Transport (Connecting to Running Hub)
+### How Multiple Instances Work
 
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://localhost:8000/sse"
-    }
-  }
-}
-```
+**Important**: Each Claude instance (Desktop or CLI) spawns its own hub process. They **cannot share a hub instance** via the config file.
 
-**Use Case**: Hub is already running for other agents, you want Claude to connect to the same instance.
+If you want multiple clients to share a hub:
+1. Run the hub separately in HTTP mode: `./scripts/start-hub-system.sh hub`
+2. Custom agents connect via HTTP/SSE (like the random agent does)
+3. Claude instances spawn their own hub processes via stdio
 
-### Example 3: Multiple Clients to Same Hub
-
-Start hub once in HTTP mode:
-```bash
-./scripts/start-hub-system.sh hub
-```
-
-**Claude Desktop config**:
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://localhost:8000/sse"
-    }
-  }
-}
-```
-
-**Claude CLI config** (different client):
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://localhost:8000/sse"
-    }
-  }
-}
-```
-
-**Result**: Both Claude Desktop AND Claude CLI connected to the same hub! They can see each other as agents.
-
-### Example 4: Remote Hub
-
-Hub running on server `192.168.1.100`:
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://192.168.1.100:8000/sse"
-    }
-  }
-}
-```
+Each hub instance can route messages between all connected agents, but Claude clients always get their own hub instance.
 
 ## Next Steps
 
@@ -420,51 +325,30 @@ Hub running on server `192.168.1.100`:
 
 ## Quick Reference
 
-### Transport Comparison
+### Claude CLI/Desktop Configuration
 
-| Transport | Command | When to Use |
-|-----------|---------|-------------|
-| **stdio** | Spawns hub process | Single local client, max performance |
-| **HTTP/SSE** | Connects to URL | Multiple clients, remote access, debugging |
+**Only stdio transport is supported:**
 
-### Configuration Templates
-
-**stdio (Local)**:
 ```json
 {
   "mcpServers": {
     "hub": {
       "command": "node",
-      "args": ["/path/to/server.js"],
+      "args": ["/path/to/atlantis/src/infrastructure/server/dist/server.js"],
       "env": {"TRANSPORT": "stdio"}
     }
   }
 }
 ```
 
-**HTTP/SSE (Local Hub)**:
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://localhost:8000/sse"
-    }
-  }
-}
-```
+### Hub Transport Modes
 
-**HTTP/SSE (Remote Hub)**:
-```json
-{
-  "mcpServers": {
-    "hub": {
-      "transport": "sse",
-      "url": "http://hub-server:8000/sse"
-    }
-  }
-}
-```
+| Transport | Used By | How to Connect |
+|-----------|---------|----------------|
+| **stdio** | Claude CLI/Desktop | Via `command` in config (spawns process) |
+| **HTTP/SSE** | Custom agents, web apps | Direct HTTP connection to running hub |
+
+**Key Point**: Claude CLI/Desktop uses stdio. Custom agents use HTTP/SSE.
 
 ### Available Tools
 
