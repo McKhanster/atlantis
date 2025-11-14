@@ -4,3 +4,11 @@
 {"timestamp":"2025-11-14T01:24:47.119Z","level":"INFO","eventType":"HUB_STARTED","message":"Logging to file: ./logs/hub.log"}
 {"timestamp":"2025-11-14T01:24:47.121Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Context initialized"}
 {"timestamp":"2025-11-14T01:24:47.121Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Server initialized with official SDK"}
+{"timestamp":"2025-11-14T01:46:32.608Z","level":"INFO","eventType":"HUB_STARTED","message":"Logging to file: ./logs/hub.log"}
+{"timestamp":"2025-11-14T01:46:32.610Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Context initialized"}
+{"timestamp":"2025-11-14T01:46:32.610Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Server initialized with official SDK"}
+{"timestamp":"2025-11-14T01:46:32.616Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Server running on HTTP: http://localhost:8000"}
+{"timestamp":"2025-11-14T01:46:46.993Z","level":"INFO","eventType":"HUB_STARTED","message":"Logging to file: ./logs/hub.log"}
+{"timestamp":"2025-11-14T01:46:46.995Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Context initialized"}
+{"timestamp":"2025-11-14T01:46:46.995Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Server initialized with official SDK"}
+{"timestamp":"2025-11-14T01:46:46.996Z","level":"INFO","eventType":"HUB_STARTED","message":"MCP Hub Server running on stdio"}
