@@ -33,23 +33,30 @@ class RandomAgent {
     console.log(`🤖 Created ${this.agentId}`);
   }
 
+  private sessionId?: string;
+
   async initialize(): Promise<boolean> {
     try {
-      // MCP initialize handshake
+      // MCP initialize handshake using JSON-RPC 2.0
       const initRequest = {
-        protocolVersion: '2024-11-05',
-        capabilities: {},
-        clientInfo: {
-          name: this.agentId,
-          type: 'random_number_agent',
-          version: '1.0.0',
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: {
+            name: this.agentId,
+            version: '1.0.0',
+          },
         },
       };
 
-      const response = await fetch(`${this.hubUrl}/mcp/initialize`, {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
         },
         body: JSON.stringify(initRequest),
       });
@@ -58,7 +65,14 @@ class RandomAgent {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log(`✅ ${this.agentId} connected to hub`);
+      // Get session ID from response headers
+      this.sessionId = response.headers.get('mcp-session-id') || undefined;
+
+      if (!this.sessionId) {
+        throw new Error('No session ID received from hub');
+      }
+
+      console.log(`✅ ${this.agentId} connected to hub (session: ${this.sessionId})`);
 
       // Start SSE listener
       this.isRunning = true;
@@ -74,43 +88,98 @@ class RandomAgent {
   }
 
   private listenSSE(): void {
-    const sseUrl = `${this.hubUrl}/mcp/sse/${this.agentId}`;
+    if (!this.sessionId) {
+      console.error('❌ Cannot listen for SSE without session ID');
+      return;
+    }
+
+    const sseUrl = `${this.hubUrl}/mcp`;
 
     console.log(`🔌 ${this.agentId} connecting to SSE: ${sseUrl}`);
 
     const connectSSE = () => {
-      if (!this.isRunning) return;
+      if (!this.isRunning || !this.sessionId) return;
 
-      this.eventSource = new EventSource(sseUrl);
-
-      this.eventSource.onopen = () => {
-        console.log(`🔌 ${this.agentId} SSE connected`);
-      };
-
-      this.eventSource.addEventListener('message', (event: any) => {
-        try {
-          const messageData = JSON.parse(event.data) as MessageData;
-          this.handleIncomingMessage(messageData);
-        } catch (e) {
-          console.error(`Error parsing message: ${e}`);
-        }
-      });
-
-      this.eventSource.addEventListener('keepalive', () => {
-        // Just a keepalive, ignore
-      });
-
-      this.eventSource.onerror = (error: any) => {
-        if (this.isRunning) {
-          console.error(`❌ ${this.agentId} SSE error: ${error}`);
-          console.log(`🔄 ${this.agentId} reconnecting in 2s...`);
-          this.eventSource?.close();
-          setTimeout(connectSSE, 2000);
-        }
-      };
+      // EventSource doesn't support custom headers, so we need to use a workaround
+      // For now, use fetch with SSE support
+      this.connectSSEWithFetch();
     };
 
     connectSSE();
+  }
+
+  private async connectSSEWithFetch(): Promise<void> {
+    if (!this.sessionId) return;
+
+    try {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
+        method: 'GET',
+        headers: {
+          Accept: 'text/event-stream',
+          'Mcp-Session-Id': this.sessionId,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log(`🔌 ${this.agentId} SSE connected`);
+
+      // Read SSE stream using node-fetch's body methods
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      let buffer = '';
+
+      // Listen for data chunks
+      response.body.on('data', (chunk: Buffer) => {
+        if (!this.isRunning) return;
+
+        buffer += chunk.toString();
+        const lines = buffer.split('\n');
+
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.substring(6);
+            try {
+              const messageData = JSON.parse(data);
+              // Check if this is a notification with our expected format
+              if (messageData.method === 'notifications/message') {
+                this.handleIncomingMessage(messageData);
+              }
+            } catch (e) {
+              // Ignore parse errors for non-JSON data like keepalive
+            }
+          }
+        }
+      });
+
+      response.body.on('end', () => {
+        if (this.isRunning) {
+          console.log(`🔄 ${this.agentId} SSE stream ended, reconnecting in 2s...`);
+          setTimeout(() => this.connectSSEWithFetch(), 2000);
+        }
+      });
+
+      response.body.on('error', (error: Error) => {
+        if (this.isRunning) {
+          console.error(`❌ ${this.agentId} SSE error: ${error}`);
+          console.log(`🔄 ${this.agentId} reconnecting in 2s...`);
+          setTimeout(() => this.connectSSEWithFetch(), 2000);
+        }
+      });
+    } catch (e) {
+      if (this.isRunning) {
+        console.error(`❌ ${this.agentId} SSE error: ${e}`);
+        console.log(`🔄 ${this.agentId} reconnecting in 2s...`);
+        setTimeout(() => this.connectSSEWithFetch(), 2000);
+      }
+    }
   }
 
   private async handleIncomingMessage(messageData: MessageData): Promise<void> {
@@ -156,6 +225,10 @@ class RandomAgent {
     requiresResponse: boolean = false
   ): Promise<void> {
     try {
+      if (!this.sessionId) {
+        throw new Error('No session ID - agent not initialized');
+      }
+
       const request = {
         jsonrpc: '2.0',
         id: `req_${uuidv4().substring(0, 8)}`,
@@ -173,10 +246,12 @@ class RandomAgent {
         },
       };
 
-      const response = await fetch(`${this.hubUrl}/mcp/tools/call`, {
+      const response = await fetch(`${this.hubUrl}/mcp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json, text/event-stream',
+          'Mcp-Session-Id': this.sessionId,
         },
         body: JSON.stringify(request),
       });
@@ -198,6 +273,20 @@ class RandomAgent {
 
     if (this.eventSource) {
       this.eventSource.close();
+    }
+
+    // Close MCP session
+    if (this.sessionId) {
+      try {
+        await fetch(`${this.hubUrl}/mcp`, {
+          method: 'DELETE',
+          headers: {
+            'Mcp-Session-Id': this.sessionId,
+          },
+        });
+      } catch (e) {
+        // Ignore errors during shutdown
+      }
     }
 
     console.log(`✅ ${this.agentId} shutdown complete`);
