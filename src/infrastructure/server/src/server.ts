@@ -40,6 +40,7 @@ import {
   LoggerConfig,
 } from './logger.js';
 import { InMemoryEventStore } from './eventStore.js';
+import { SessionManager } from './sessionManager.js';
 
 interface HubContext {
   agents: Map<string, AgentInfo>;
@@ -84,6 +85,7 @@ interface GetConversationArgs {
 export class MCPHub {
   private server: Server;
   private context: HubContext;
+  private sessionManager?: SessionManager;
 
   constructor(loggerConfig?: Partial<LoggerConfig>) {
     this.server = new Server(
@@ -455,8 +457,12 @@ export class MCPHub {
       })
     );
 
-    // Map to store transports by session ID
-    const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+    // Initialize session manager
+    this.sessionManager = new SessionManager(this.context.logger, {
+      sessionTimeout: 5 * 60 * 1000, // 5 minutes
+      heartbeatInterval: 30 * 1000, // 30 seconds
+      cleanupInterval: 60 * 1000, // 1 minute
+    });
 
     // MCP POST endpoint - handles requests
     app.post('/mcp', async (req: Request, res: Response) => {
@@ -472,35 +478,28 @@ export class MCPHub {
       try {
         let transport: StreamableHTTPServerTransport;
 
-        if (sessionId && transports[sessionId]) {
+        if (sessionId && this.sessionManager!.hasSession(sessionId)) {
           // Reuse existing transport
-          transport = transports[sessionId];
+          transport = this.sessionManager!.getTransport(sessionId)!;
         } else if (!sessionId && isInitializeRequest(req.body)) {
           // New initialization request
           const eventStore = new InMemoryEventStore();
+
+          // Extract client info from request if available
+          const clientInfo = req.body.params?.clientInfo;
+
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
             eventStore,
             onsessioninitialized: (newSessionId) => {
-              this.context.logger.info(
-                LogEventType.MCP_INITIALIZE,
-                `Session initialized with ID: ${newSessionId}`
+              // Register session with SessionManager
+              this.sessionManager!.registerSession(
+                newSessionId,
+                transport,
+                clientInfo
               );
-              transports[newSessionId] = transport;
             },
           });
-
-          // Set up onclose handler
-          transport.onclose = () => {
-            const sid = transport.sessionId;
-            if (sid && transports[sid]) {
-              this.context.logger.info(
-                LogEventType.SSE_DISCONNECTED,
-                `Transport closed for session ${sid}`
-              );
-              delete transports[sid];
-            }
-          };
 
           // Connect the transport to the MCP server
           await this.server.connect(transport);
@@ -513,7 +512,7 @@ export class MCPHub {
             jsonrpc: '2.0',
             error: {
               code: -32000,
-              message: 'Bad Request: No valid session ID provided',
+              message: 'Bad Request: No valid session ID provided or session expired',
             },
             id: null,
           });
@@ -544,8 +543,8 @@ export class MCPHub {
     app.get('/mcp', async (req: Request, res: Response) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
-      if (!sessionId || !transports[sessionId]) {
-        res.status(400).send('Invalid or missing session ID');
+      if (!sessionId || !this.sessionManager!.hasSession(sessionId)) {
+        res.status(400).send('Invalid, missing, or expired session ID');
         return;
       }
 
@@ -565,7 +564,12 @@ export class MCPHub {
         );
       }
 
-      const transport = transports[sessionId];
+      const transport = this.sessionManager!.getTransport(sessionId);
+      if (!transport) {
+        res.status(400).send('Session expired');
+        return;
+      }
+
       await transport.handleRequest(req, res);
     });
 
@@ -573,21 +577,12 @@ export class MCPHub {
     app.delete('/mcp', async (req: Request, res: Response) => {
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
-      if (!sessionId || !transports[sessionId]) {
+      if (!sessionId || !this.sessionManager!.hasSession(sessionId)) {
         res.status(400).send('Invalid or missing session ID');
         return;
       }
 
-      this.context.logger.info(
-        LogEventType.SSE_DISCONNECTED,
-        `Terminating session: ${sessionId}`,
-        { sessionId }
-      );
-
-      const transport = transports[sessionId];
-      await transport.close();
-      delete transports[sessionId];
-
+      this.sessionManager!.removeSession(sessionId, 'client requested termination');
       res.status(200).send('Session terminated');
     });
 
@@ -642,13 +637,42 @@ export class MCPHub {
       }
     });
 
+    // Sessions endpoint - get session information
+    app.get('/sessions', (req: Request, res: Response) => {
+      try {
+        const stats = this.sessionManager!.getStats();
+        const sessions = this.sessionManager!.getAllSessionIds().map(id => {
+          const meta = this.sessionManager!.getSessionMetadata(id);
+          return {
+            sessionId: id,
+            clientName: meta?.clientInfo?.name,
+            clientVersion: meta?.clientInfo?.version,
+            createdAt: meta?.createdAt,
+            lastActivity: meta?.lastActivity,
+            ageMs: Date.now() - (meta?.createdAt?.getTime() || 0),
+            inactiveMs: Date.now() - (meta?.lastActivity?.getTime() || 0),
+          };
+        });
+
+        res.json({
+          total: stats.total,
+          sessions,
+          stats,
+        });
+      } catch (error) {
+        res.status(500).json({ error: String(error) });
+      }
+    });
+
     // Health check endpoint
     app.get('/health', (req: Request, res: Response) => {
+      const sessionStats = this.sessionManager!.getStats();
       res.json({
         status: 'healthy',
         agents: this.context.agents.size,
         conversations: this.context.conversations.size,
-        sessions: Object.keys(transports).length,
+        sessions: sessionStats.total,
+        uptime: process.uptime(),
       });
     });
 
@@ -663,8 +687,12 @@ export class MCPHub {
       console.log(`   - DELETE http://localhost:${port}/mcp`);
       console.log(`\n📊 Management Endpoints:`);
       console.log(`   - Health: GET http://localhost:${port}/health`);
+      console.log(`   - Sessions: GET http://localhost:${port}/sessions`);
       console.log(`   - Logs: GET http://localhost:${port}/logs`);
       console.log(`   - Stats: GET http://localhost:${port}/logs/stats`);
+      console.log(`\n🔄 Session Management:`);
+      console.log(`   - Timeout: 5 minutes of inactivity`);
+      console.log(`   - Cleanup: Every 1 minute`);
     });
   }
 
@@ -678,6 +706,12 @@ export class MCPHub {
 
   async shutdown(): Promise<void> {
     this.context.logger.info(LogEventType.HUB_STOPPED, 'MCP Hub shutting down');
+
+    // Clean up session manager
+    if (this.sessionManager) {
+      this.sessionManager.shutdown();
+    }
+
     this.context.logger.close();
   }
 }
@@ -687,6 +721,16 @@ export class MCPHub {
 // ============================================================================
 async function main() {
   const hub = new MCPHub();
+
+  // Graceful shutdown handlers
+  const shutdownHandler = async (signal: string) => {
+    console.log(`\n${signal} received, shutting down gracefully...`);
+    await hub.shutdown();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', () => shutdownHandler('SIGINT'));
+  process.on('SIGTERM', () => shutdownHandler('SIGTERM'));
 
   // Choose transport based on environment variable or command line arg
   const transport = process.env.TRANSPORT || process.argv[2] || 'http';
