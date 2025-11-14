@@ -27,7 +27,11 @@ If the file doesn't exist, create it.
 
 ## Step 2: Add Hub Configuration
 
-Add this to your config file (update the path to match your installation):
+You can connect using **stdio** (local) or **HTTP/SSE** (local or remote) transport.
+
+### Option A: stdio Transport (Recommended for Local)
+
+Best for single local client, lowest latency.
 
 ```json
 {
@@ -46,6 +50,55 @@ Add this to your config file (update the path to match your installation):
 ```
 
 **Important**: Replace `/home/user/atlantis` with the actual path to your atlantis directory!
+
+### Option B: HTTP/SSE Transport (Works with Remote Hub)
+
+Best for connecting to an already-running hub instance (local or remote).
+
+**First, start the hub in HTTP mode:**
+```bash
+cd /home/user/atlantis
+./scripts/start-hub-system.sh hub
+```
+
+**Then add this config:**
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+For a remote hub, change the URL:
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://your-hub-server:8000/sse"
+    }
+  }
+}
+```
+
+### Which Transport Should I Use?
+
+| Feature | stdio | HTTP/SSE |
+|---------|-------|----------|
+| **Latency** | <0.1ms | 0.5-2ms (local), higher for remote |
+| **Throughput** | 100K+ msg/sec | 10K-50K msg/sec |
+| **Use Case** | Single local client | Multiple clients or remote access |
+| **Debugging** | Harder | Easier (curl, browser tools) |
+| **Setup** | Simpler | Need to start hub separately |
+| **Clients** | One per hub instance | Unlimited |
+
+**Recommendation**:
+- Use **stdio** if you're the only client and hub is local
+- Use **HTTP/SSE** if you need remote access or multiple clients
 
 ### How to Find Your Path
 
@@ -258,7 +311,7 @@ Here are the connected agents:
 
 ## Complete Example Config
 
-Here's a full example with multiple MCP servers:
+### Example 1: Multiple MCP Servers (stdio)
 
 ```json
 {
@@ -282,6 +335,68 @@ Here's a full example with multiple MCP servers:
 
 Now Claude has access to both the hub AND filesystem tools!
 
+### Example 2: HTTP/SSE Transport (Connecting to Running Hub)
+
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+**Use Case**: Hub is already running for other agents, you want Claude to connect to the same instance.
+
+### Example 3: Multiple Clients to Same Hub
+
+Start hub once in HTTP mode:
+```bash
+./scripts/start-hub-system.sh hub
+```
+
+**Claude Desktop config**:
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+**Claude CLI config** (different client):
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+**Result**: Both Claude Desktop AND Claude CLI connected to the same hub! They can see each other as agents.
+
+### Example 4: Remote Hub
+
+Hub running on server `192.168.1.100`:
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://192.168.1.100:8000/sse"
+    }
+  }
+}
+```
+
 ## Next Steps
 
 1. Start the random agent to test messaging:
@@ -302,6 +417,74 @@ Now Claude has access to both the hub AND filesystem tools!
 - The hub only listens on stdio when connected to Claude CLI (no network exposure)
 - All tool calls are logged for audit purposes
 - Consider implementing authentication if exposing the HTTP endpoint
+
+## Quick Reference
+
+### Transport Comparison
+
+| Transport | Command | When to Use |
+|-----------|---------|-------------|
+| **stdio** | Spawns hub process | Single local client, max performance |
+| **HTTP/SSE** | Connects to URL | Multiple clients, remote access, debugging |
+
+### Configuration Templates
+
+**stdio (Local)**:
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "command": "node",
+      "args": ["/path/to/server.js"],
+      "env": {"TRANSPORT": "stdio"}
+    }
+  }
+}
+```
+
+**HTTP/SSE (Local Hub)**:
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+**HTTP/SSE (Remote Hub)**:
+```json
+{
+  "mcpServers": {
+    "hub": {
+      "transport": "sse",
+      "url": "http://hub-server:8000/sse"
+    }
+  }
+}
+```
+
+### Available Tools
+
+Once connected, Claude can use:
+
+| Tool | Purpose |
+|------|---------|
+| `register_agent` | Register a new agent in the hub |
+| `send_message` | Send message from one agent to another |
+| `list_agents` | List all connected agents |
+| `get_conversation` | Get conversation history |
+
+### Hub Endpoints (HTTP mode)
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST http://localhost:8000/sse` | MCP SSE connection |
+| `GET http://localhost:8000/health` | Health check |
+| `GET http://localhost:8000/logs` | Query logs |
+| `GET http://localhost:8000/logs/stats` | Log statistics |
 
 ## Support
 

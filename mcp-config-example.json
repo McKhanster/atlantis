@@ -1,6 +1,7 @@
 {
   "mcpServers": {
-    "hub": {
+    "hub-stdio": {
+      "comment": "Local stdio transport - lowest latency, single client",
       "command": "node",
       "args": [
         "/home/user/atlantis/src/infrastructure/server/dist/server.js"
@@ -8,6 +9,11 @@
       "env": {
         "TRANSPORT": "stdio"
       }
+    },
+    "hub-http": {
+      "comment": "HTTP/SSE transport - works with remote hub instances",
+      "transport": "sse",
+      "url": "http://localhost:8000/sse"
     }
   }
 }
