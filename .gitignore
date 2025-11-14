@@ -2,3 +2,5 @@ node_modules
 info.txt
 dist
 __tests__
+logs
+*.log
