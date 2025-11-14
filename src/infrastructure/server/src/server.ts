@@ -15,6 +15,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  InitializeRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import express, { Request, Response } from 'express';
@@ -107,6 +108,22 @@ export class MCPHub {
   }
 
   private setupHandlers(): void {
+    // Handle initialization request
+    this.server.setRequestHandler(InitializeRequestSchema, async (request) => {
+      this.context.logger.logMCPToolCall('initialize', undefined, request.params);
+
+      return {
+        protocolVersion: '2024-11-05',
+        capabilities: {
+          tools: {},
+        },
+        serverInfo: {
+          name: 'autoninja-mcp-hub',
+          version: '1.0.0',
+        },
+      };
+    });
+
     // List available tools
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
