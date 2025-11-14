@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "hub": {
+      "command": "node",
+      "args": [
+        "/home/user/atlantis/src/infrastructure/server/dist/server.js"
+      ],
+      "env": {
+        "TRANSPORT": "stdio"
+      }
+    }
+  }
+}
