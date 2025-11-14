@@ -4,7 +4,7 @@
  * Connects via HTTP to send messages and listens via SSE to receive messages
  */
 
-import EventSource from 'eventsource';
+import { EventSource } from 'eventsource';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import * as readline from 'readline';
@@ -99,7 +99,7 @@ class SimpleCLIClient {
         // Ignore keepalives
       });
 
-      this.eventSource.onerror = (error) => {
+      this.eventSource.onerror = (error: any) => {
         if (this.isRunning) {
           // Silently reconnect
           this.eventSource?.close();
