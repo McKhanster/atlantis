@@ -1,48 +1,55 @@
-# Atlantis - MCP Hub for Agent Communication
+# Atlantis Core - MCP Hub for Agent Communication
 
-A feature-rich, MCP-compliant hub for agent-to-agent communication with centralized logging.
+A feature-rich, MCP-compliant hub for agent-to-agent communication with centralized logging and session management.
 
 ## Features
 
 ✅ **MCP Compliant** - Works with Claude CLI and custom agents
 ✅ **Dual Transport** - stdio (Claude CLI) and HTTP (custom agents)
 ✅ **Centralized Logging** - Logs all interactions to file, console, and memory
-✅ **Session Management** - Proper session handling with resumability
+✅ **Session Management** - Automatic timeout, cleanup, and resumability
 ✅ **Agent Tools** - Register agents, send messages, track conversations
 
 ## Quick Start
 
-### For Claude CLI Users
+### Installation
 
-**1. Build the hub:**
 ```bash
-cd src/infrastructure/server
-npm install && npm run build
+npm install
+npm run build
 ```
 
-**2. Configure Claude CLI (`~/.config/claude/config.json`):**
+### Start the Hub
+
+```bash
+# Start just the hub server
+npm run hub
+
+# Or start complete development system (hub + client + agent)
+npm run dev
+```
+
+The hub will be available at http://localhost:8000
+
+### For Claude CLI
+
+**Configure `~/.config/claude/config.json`:**
 ```json
 {
   "mcpServers": {
-    "hub": {
+    "atlantis": {
       "command": "node",
-      "args": ["/path/to/atlantis/src/infrastructure/server/dist/server.js"],
-      "env": {"TRANSPORT": "stdio"}
+      "args": ["/path/to/atlantis/dist/index.js", "stdio"]
     }
   }
 }
 ```
 
-**3. Restart Claude** - The hub will start automatically!
+Restart Claude - the hub starts automatically as a subprocess.
 
 ### For Custom Agents
 
-**1. Start the hub:**
-```bash
-./scripts/start-hub-system.sh hub
-```
-
-**2. Connect your agent:**
+**Connect via HTTP:**
 ```typescript
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -57,31 +64,59 @@ const client = new Client(
 );
 
 await client.connect(transport);
+
+// Use tools
+await client.request({
+  method: 'tools/call',
+  params: {
+    name: 'list_agents',
+    arguments: {}
+  }
+});
 ```
 
 ## Available Tools
 
-| Tool | Description |
-|------|-------------|
-| `register_agent` | Register an agent with the hub |
-| `send_message` | Send message between agents |
-| `list_agents` | List all connected agents |
-| `get_conversation` | Get conversation history |
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `register_agent` | Register an agent with the hub | `agent_id`, `agent_type`, `version?` |
+| `send_message` | Send message between agents | `from_agent`, `to_agent`, `payload`, `conversation_id?`, `reply_to?`, `requires_response?` |
+| `list_agents` | List all connected agents | - |
+| `get_conversation` | Get conversation history | `conversation_id` |
 
-## Documentation
+## API Endpoints
 
-### Getting Started
-- **[HTTP_QUICKSTART.md](HTTP_QUICKSTART.md)** - How to start the server and connect clients
-- **[README_HTTP.md](README_HTTP.md)** - Connection examples in all languages
-- **[QUICKSTART_HUB.md](QUICKSTART_HUB.md)** - Complete system overview
+### MCP Protocol
+- `POST /mcp` - Initialize session and call tools (requires `Mcp-Session-Id` header for tools)
+- `GET /mcp` - Server-Sent Events stream (requires `Mcp-Session-Id` header)
+- `DELETE /mcp` - Terminate session (requires `Mcp-Session-Id` header)
 
-### For Claude CLI
-- **[CLAUDE_CLI_SETUP.md](CLAUDE_CLI_SETUP.md)** - Claude CLI configuration guide
-- **[mcp-config-example.json](mcp-config-example.json)** - Example config file
+### Management
+- `GET /health` - Health check with stats (`{status, agents, conversations, sessions, uptime}`)
+- `GET /sessions` - List active sessions with metadata
+- `GET /logs` - Query logs with filters (`?level=`, `?eventType=`, `?agentId=`, etc.)
+- `GET /logs/stats` - Log statistics and aggregated metrics
 
-### Technical Details
-- **[MCP_HTTP_TRANSPORT.md](MCP_HTTP_TRANSPORT.md)** - HTTP transport specification
-- **[HUB_README.md](HUB_README.md)** - Complete hub documentation
+## NPM Scripts
+
+```bash
+# Build & Run
+npm run build          # Compile TypeScript
+npm start              # Start server (HTTP mode)
+npm run start:http     # Start in HTTP mode (default)
+npm run start:stdio    # Start in stdio mode
+npm run dev            # Start hub + client + agent
+npm run hub            # Start hub only
+
+# Development
+npm run lint           # Run ESLint
+npm run lint:fix       # Auto-fix linting issues
+npm run type-check     # TypeScript type checking
+npm test               # Run tests
+npm run test:watch     # Run tests in watch mode
+npm run ci             # Full CI pipeline (lint + type-check + test)
+npm run clean          # Remove build artifacts
+```
 
 ## Architecture
 
@@ -93,45 +128,36 @@ await client.connect(transport);
     ┌────▼─────┐         ┌──────────────┐
     │ MCP Hub  │◄────────┤ Custom Agent │ (HTTP transport)
     │          │         └──────────────┘
-    │ • Logging│
-    │ • Routing│         ┌──────────────┐
-    │ • Session│◄────────┤ Custom Agent │ (HTTP transport)
-    └──────────┘         └──────────────┘
+    │ Features │
+    │ • Session│         ┌──────────────┐
+    │ • Logging│◄────────┤ Custom Agent │ (HTTP transport)
+    │ • Routing│         └──────────────┘
+    └──────────┘
 ```
 
-## Development
+### Session Lifecycle
+1. Client sends initialize request to `POST /mcp`
+2. Server responds with `Mcp-Session-Id` header
+3. Client uses session ID in all requests
+4. Session expires after 5 minutes of inactivity
+5. Auto-cleanup every 1 minute
 
-```bash
-# Build everything
-cd src/infrastructure/server && npm run build
-cd client/agent && npm run build
-cd client/client && npm run build
+## Configuration
 
-# Start the system
-./scripts/start-hub-system.sh all
+### Environment Variables
+- `TRANSPORT` - Transport mode (`http` or `stdio`, default: `http`)
+- `PORT` - HTTP server port (default: `8000`)
 
-# Run just the hub
-./scripts/start-hub-system.sh hub
+### Session Manager
+- **Timeout**: 5 minutes of inactivity
+- **Cleanup**: Every 1 minute
+- **Heartbeat**: 30 seconds
 
-# Stop everything
-./scripts/start-hub-system.sh stop
-```
+## Documentation
 
-## Testing
-
-```bash
-# Check hub health
-curl http://localhost:8000/health
-
-# View logs
-curl http://localhost:8000/logs/stats
-
-# Test with curl
-curl -X POST http://localhost:8000/mcp \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",...}'
-```
+- **[src/function-inventory.md](src/function-inventory.md)** - Complete API reference and architecture documentation
+- **[CLAUDE.md](CLAUDE.md)** - Project instructions for Claude Code
+- **[AGENTS.md](AGENTS.md)** - Agent development guidelines
 
 ## Requirements
 
