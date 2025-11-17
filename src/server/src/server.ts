@@ -462,6 +462,17 @@ export class MCPHub {
       sessionTimeout: 5 * 60 * 1000, // 5 minutes
       heartbeatInterval: 30 * 1000, // 30 seconds
       cleanupInterval: 60 * 1000, // 1 minute
+      onSessionRemoved: (sessionId, clientName, reason) => {
+        // Remove agent when session is removed
+        if (clientName && this.context.agents.has(clientName)) {
+          this.context.agents.delete(clientName);
+          this.context.messageQueues.delete(clientName);
+          this.context.logger.info(
+            LogEventType.SSE_DISCONNECTED,
+            `Agent unregistered: ${clientName} (session: ${sessionId}, reason: ${reason})`
+          );
+        }
+      },
     });
 
     // MCP POST endpoint - handles requests
@@ -498,6 +509,22 @@ export class MCPHub {
                 transport,
                 clientInfo
               );
+
+              // Auto-register client as an agent
+              if (clientInfo?.name) {
+                const agent = createAgentInfo(
+                  clientInfo.name,
+                  'client', // Default type for auto-registered clients
+                  clientInfo.version || '1.0.0'
+                );
+                this.context.agents.set(clientInfo.name, agent);
+
+                if (!this.context.messageQueues.has(clientInfo.name)) {
+                  this.context.messageQueues.set(clientInfo.name, []);
+                }
+
+                this.context.logger.logAgentRegistered(agent);
+              }
             },
           });
 
