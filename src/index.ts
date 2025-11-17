@@ -4,7 +4,7 @@
  * Main executable for the MCP server with agent-to-agent communication hub
  */
 
-import { MCPHub } from './infrastructure/server';
+import { MCPHub } from './server';
 
 /**
  * Main entry point for Atlantis Core MCP Server
@@ -35,5 +35,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Export for programmatic use
-export { MCPHub } from './infrastructure/server';
-export * from './infrastructure/server';
+export { MCPHub } from './server';
+export * from './server';
