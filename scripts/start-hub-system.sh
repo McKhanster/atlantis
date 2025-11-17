@@ -32,7 +32,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-HUB_DIR="src/infrastructure/server"
+HUB_DIR="src/server"
 CLIENT_DIR="client/client"
 AGENT_DIR="client/agent"
 HUB_PORT=8000
