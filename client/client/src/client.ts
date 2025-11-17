@@ -179,9 +179,25 @@ class SimpleCLIClient {
 
     // If content-type is SSE, parse the SSE format
     if (contentType && contentType.includes('text/event-stream')) {
-      const text = await response.text();
-      // SSE format: event: message\nid: xxx\ndata: {...}\n\n
-      const lines = text.split('\n');
+      // Read the stream manually until we get a complete message
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      let buffer = '';
+
+      // Read chunks until we get a complete SSE message (ends with \n\n)
+      for await (const chunk of response.body) {
+        buffer += chunk.toString();
+
+        // Check if we have a complete message (ends with \n\n)
+        if (buffer.includes('\n\n')) {
+          break;
+        }
+      }
+
+      // Parse SSE format: event: message\nid: xxx\ndata: {...}\n\n
+      const lines = buffer.split('\n');
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const jsonStr = line.substring(6); // Remove 'data: ' prefix
