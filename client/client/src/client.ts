@@ -208,7 +208,7 @@ class SimpleCLIClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
+          Accept: 'application/json',
           'Mcp-Session-Id': this.sessionId,
         },
         body: JSON.stringify(request),
@@ -274,7 +274,7 @@ class SimpleCLIClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
+          Accept: 'application/json',
           'Mcp-Session-Id': this.sessionId,
         },
         body: JSON.stringify(request),
