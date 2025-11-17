@@ -22,6 +22,7 @@ export interface SessionManagerConfig {
   sessionTimeout: number; // milliseconds
   heartbeatInterval: number; // milliseconds
   cleanupInterval: number; // milliseconds
+  onSessionRemoved?: (sessionId: string, clientName?: string, reason?: string) => void;
 }
 
 const DEFAULT_CONFIG: SessionManagerConfig = {
@@ -145,6 +146,9 @@ export class SessionManager {
       return;
     }
 
+    // Store client name before removing
+    const clientName = session.clientInfo?.name;
+
     // Remove from map FIRST to prevent circular reference
     this.sessions.delete(sessionId);
 
@@ -159,6 +163,11 @@ export class SessionManager {
     }
     if (session.timeoutCheckInterval) {
       clearInterval(session.timeoutCheckInterval);
+    }
+
+    // Notify callback if provided
+    if (this.config.onSessionRemoved) {
+      this.config.onSessionRemoved(sessionId, clientName, reason);
     }
 
     // Note: We don't call transport.close() here because:
