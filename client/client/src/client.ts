@@ -184,27 +184,48 @@ class SimpleCLIClient {
         throw new Error('No response body');
       }
 
-      let buffer = '';
+      const body = response.body; // Store reference for TypeScript
 
-      // Read chunks until we get a complete SSE message (ends with \n\n)
-      for await (const chunk of response.body) {
-        buffer += chunk.toString();
+      return new Promise((resolve, reject) => {
+        let buffer = '';
+        let timeout: NodeJS.Timeout;
 
-        // Check if we have a complete message (ends with \n\n)
-        if (buffer.includes('\n\n')) {
-          break;
-        }
-      }
+        // Set a timeout in case we don't get a complete message
+        timeout = setTimeout(() => {
+          body.removeAllListeners();
+          reject(new Error('Timeout waiting for SSE response'));
+        }, 5000);
 
-      // Parse SSE format: event: message\nid: xxx\ndata: {...}\n\n
-      const lines = buffer.split('\n');
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const jsonStr = line.substring(6); // Remove 'data: ' prefix
-          return JSON.parse(jsonStr);
-        }
-      }
-      throw new Error('No data found in SSE response');
+        body.on('data', (chunk: Buffer) => {
+          buffer += chunk.toString();
+
+          // Check if we have a complete message (ends with \n\n)
+          if (buffer.includes('\n\n')) {
+            clearTimeout(timeout);
+            body.removeAllListeners();
+
+            // Parse SSE format: event: message\nid: xxx\ndata: {...}\n\n
+            const lines = buffer.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const jsonStr = line.substring(6); // Remove 'data: ' prefix
+                try {
+                  resolve(JSON.parse(jsonStr));
+                } catch (e) {
+                  reject(new Error(`Failed to parse SSE data: ${e}`));
+                }
+                return;
+              }
+            }
+            reject(new Error('No data found in SSE response'));
+          }
+        });
+
+        body.on('error', (error: Error) => {
+          clearTimeout(timeout);
+          reject(error);
+        });
+      });
     }
 
     // Otherwise, parse as regular JSON
