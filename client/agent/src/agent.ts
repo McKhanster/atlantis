@@ -56,7 +56,7 @@ class RandomAgent {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: 'application/json, text/event-stream',
         },
         body: JSON.stringify(initRequest),
       });
@@ -250,7 +250,7 @@ class RandomAgent {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
+          Accept: 'application/json, text/event-stream',
           'Mcp-Session-Id': this.sessionId,
         },
         body: JSON.stringify(request),
