@@ -5,7 +5,7 @@
  */
 
 import { EventSource } from 'eventsource';
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import * as readline from 'readline';
 
@@ -171,6 +171,30 @@ class SimpleCLIClient {
     }
   }
 
+  /**
+   * Parse response - handles both JSON and SSE formats
+   */
+  private async parseResponse(response: Response): Promise<any> {
+    const contentType = response.headers.get('content-type');
+
+    // If content-type is SSE, parse the SSE format
+    if (contentType && contentType.includes('text/event-stream')) {
+      const text = await response.text();
+      // SSE format: event: message\nid: xxx\ndata: {...}\n\n
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const jsonStr = line.substring(6); // Remove 'data: ' prefix
+          return JSON.parse(jsonStr);
+        }
+      }
+      throw new Error('No data found in SSE response');
+    }
+
+    // Otherwise, parse as regular JSON
+    return await response.json();
+  }
+
   private displayIncomingMessage(messageData: MessageData): void {
     try {
       const { from_agent, payload, message_id } = messageData.params;
@@ -218,7 +242,7 @@ class SimpleCLIClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: any = await response.json();
+      const result: any = await this.parseResponse(response);
 
       if (result.error) {
         console.log(`❌ Error: ${result.error.message}`);
@@ -284,7 +308,7 @@ class SimpleCLIClient {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const result: any = await response.json();
+      const result: any = await this.parseResponse(response);
 
       if (result.error) {
         console.log(`❌ Error: ${result.error.message}`);
