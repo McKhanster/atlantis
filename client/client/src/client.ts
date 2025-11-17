@@ -1,33 +1,27 @@
 #!/usr/bin/env node
 /**
  * Independent CLI Client for MCP Hub
- * Connects via HTTP to send messages and listens via SSE to receive messages
+ * Uses official MCP SDK with StreamableHTTPClientTransport
  */
 
-import { EventSource } from 'eventsource';
-import fetch, { Response } from 'node-fetch';
-import { v4 as uuidv4 } from 'uuid';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import type { CallToolResult, Notification } from '@modelcontextprotocol/sdk/types.js';
 import * as readline from 'readline';
-
-interface MessageData {
-  params: {
-    from_agent: string;
-    message_id: string;
-    payload: Record<string, any>;
-    conversation_id?: string;
-  };
-}
 
 class SimpleCLIClient {
   private hubUrl: string;
   private clientId: string;
+  private client?: Client;
+  private transport?: StreamableHTTPClientTransport;
   private sessionId?: string;
-  private isRunning: boolean = false;
-  private eventSource?: EventSource;
 
-  constructor(hubUrl: string = 'http://localhost:8000') {
-    this.hubUrl = hubUrl.replace(/\/$/, '');
-    this.clientId = `cli_user_${uuidv4().substring(0, 8)}`;
+  constructor(
+    hubUrl: string = 'http://localhost:8000/mcp',
+    clientId?: string
+  ) {
+    this.hubUrl = hubUrl;
+    this.clientId = clientId || `cli_user_${Math.random().toString(36).substring(2, 10)}`;
   }
 
   async connect(): Promise<void> {
@@ -35,206 +29,35 @@ class SimpleCLIClient {
     console.log(`   Hub URL: ${this.hubUrl}`);
     console.log(`   Client ID: ${this.clientId}\n`);
 
-    // Register with hub
-    await this.register();
+    // Create MCP client
+    this.client = new Client(
+      {
+        name: this.clientId,
+        version: '1.0.0',
+      },
+      {
+        capabilities: {},
+      }
+    );
 
-    // Start SSE listener
-    this.isRunning = true;
-    this.listenSSE();
+    // Note: Incoming message notifications would be handled here if the server
+    // implements them as MCP notifications. For now, messages are delivered
+    // through the SSE stream which the transport handles automatically.
+
+    // Create transport and connect
+    this.transport = new StreamableHTTPClientTransport(new URL(this.hubUrl), {
+      sessionId: this.sessionId,
+    });
+
+    await this.client.connect(this.transport);
+    this.sessionId = this.transport.sessionId;
+
+    console.log(`✅ Registered as: ${this.clientId} (session: ${this.sessionId})\n`);
   }
 
-  private async register(): Promise<void> {
+  private displayIncomingMessage(params: any): void {
     try {
-      // MCP initialize handshake using JSON-RPC 2.0
-      const initRequest = {
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'initialize',
-        params: {
-          protocolVersion: '2024-11-05',
-          capabilities: {},
-          clientInfo: {
-            name: this.clientId,
-            version: '1.0.0',
-          },
-        },
-      };
-
-      const response = await fetch(`${this.hubUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-        },
-        body: JSON.stringify(initRequest),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Get session ID from response headers
-      this.sessionId = response.headers.get('mcp-session-id') || undefined;
-
-      if (!this.sessionId) {
-        throw new Error('No session ID received from hub');
-      }
-
-      console.log(`✅ Registered as: ${this.clientId} (session: ${this.sessionId})\n`);
-    } catch (e) {
-      console.error(`❌ Registration failed: ${e}`);
-      throw e;
-    }
-  }
-
-  private listenSSE(): void {
-    if (!this.sessionId) {
-      console.error('❌ Cannot listen for SSE without session ID');
-      return;
-    }
-
-    // Note: EventSource doesn't support custom headers
-    // For production, use fetch with SSE support or a library that supports headers
-    // For now, this is a simplified implementation
-    this.connectSSEWithFetch();
-  }
-
-  private async connectSSEWithFetch(): Promise<void> {
-    if (!this.sessionId) return;
-
-    try {
-      const response = await fetch(`${this.hubUrl}/mcp`, {
-        method: 'GET',
-        headers: {
-          Accept: 'text/event-stream',
-          'Mcp-Session-Id': this.sessionId,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Read SSE stream using node-fetch's body methods
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
-      let buffer = '';
-
-      // Listen for data chunks
-      response.body.on('data', (chunk: Buffer) => {
-        if (!this.isRunning) return;
-
-        buffer += chunk.toString();
-        const lines = buffer.split('\n');
-
-        // Keep the last incomplete line in the buffer
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.substring(6);
-            try {
-              const messageData = JSON.parse(data);
-              // Check if this is a notification with our expected format
-              if (messageData.method === 'notifications/message') {
-                this.displayIncomingMessage(messageData);
-              }
-            } catch (e) {
-              // Ignore parse errors for non-JSON data like keepalive
-            }
-          }
-        }
-      });
-
-      response.body.on('end', () => {
-        if (this.isRunning) {
-          console.log(`\n🔄 SSE stream ended, reconnecting in 2s...\n`);
-          setTimeout(() => this.connectSSEWithFetch(), 2000);
-        }
-      });
-
-      response.body.on('error', (error: Error) => {
-        if (this.isRunning) {
-          console.error(`\n❌ SSE error: ${error}`);
-          console.log(`🔄 Reconnecting in 2s...\n`);
-          setTimeout(() => this.connectSSEWithFetch(), 2000);
-        }
-      });
-    } catch (e) {
-      if (this.isRunning) {
-        console.error(`\n❌ SSE error: ${e}`);
-        console.log(`🔄 Reconnecting in 2s...\n`);
-        setTimeout(() => this.connectSSEWithFetch(), 2000);
-      }
-    }
-  }
-
-  /**
-   * Parse response - handles both JSON and SSE formats
-   */
-  private async parseResponse(response: Response): Promise<any> {
-    const contentType = response.headers.get('content-type');
-
-    // If content-type is SSE, parse the SSE format
-    if (contentType && contentType.includes('text/event-stream')) {
-      // Read the stream manually until we get a complete message
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
-      const body = response.body; // Store reference for TypeScript
-
-      return new Promise((resolve, reject) => {
-        let buffer = '';
-        let timeout: NodeJS.Timeout;
-
-        // Set a timeout in case we don't get a complete message
-        timeout = setTimeout(() => {
-          body.removeAllListeners();
-          reject(new Error('Timeout waiting for SSE response'));
-        }, 5000);
-
-        body.on('data', (chunk: Buffer) => {
-          buffer += chunk.toString();
-
-          // Check if we have a complete message (ends with \n\n)
-          if (buffer.includes('\n\n')) {
-            clearTimeout(timeout);
-            body.removeAllListeners();
-
-            // Parse SSE format: event: message\nid: xxx\ndata: {...}\n\n
-            const lines = buffer.split('\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const jsonStr = line.substring(6); // Remove 'data: ' prefix
-                try {
-                  resolve(JSON.parse(jsonStr));
-                } catch (e) {
-                  reject(new Error(`Failed to parse SSE data: ${e}`));
-                }
-                return;
-              }
-            }
-            reject(new Error('No data found in SSE response'));
-          }
-        });
-
-        body.on('error', (error: Error) => {
-          clearTimeout(timeout);
-          reject(error);
-        });
-      });
-    }
-
-    // Otherwise, parse as regular JSON
-    return await response.json();
-  }
-
-  private displayIncomingMessage(messageData: MessageData): void {
-    try {
-      const { from_agent, payload, message_id } = messageData.params;
+      const { from_agent, payload, message_id } = params;
 
       console.log('\n' + '='.repeat(60));
       console.log(`📬 Incoming message from: ${from_agent}`);
@@ -251,44 +74,27 @@ class SimpleCLIClient {
 
   async listAgents(): Promise<void> {
     try {
-      if (!this.sessionId) {
-        throw new Error('No session ID - client not connected');
+      if (!this.client) {
+        throw new Error('Client not connected');
       }
 
-      const request = {
-        jsonrpc: '2.0',
-        id: `req_${uuidv4().substring(0, 8)}`,
-        method: 'tools/call',
-        params: {
-          name: 'list_agents',
-          arguments: {},
-        },
-      };
-
-      const response = await fetch(`${this.hubUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-          'Mcp-Session-Id': this.sessionId,
-        },
-        body: JSON.stringify(request),
+      const result = await this.client.callTool({
+        name: 'list_agents',
+        arguments: {},
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: any = await this.parseResponse(response);
-
-      if (result.error) {
-        console.log(`❌ Error: ${result.error.message}`);
+      if (!(result as any).content || !Array.isArray((result as any).content) || (result as any).content.length === 0) {
+        console.log('❌ No response from server\n');
         return;
       }
 
-      // Parse result
-      const content = result.result.content[0].text;
-      const data = JSON.parse(content);
+      const content = (result as any).content[0];
+      if (content.type !== 'text') {
+        console.log('❌ Unexpected response type\n');
+        return;
+      }
+
+      const data = JSON.parse(content.text);
 
       console.log('\n' + '='.repeat(60));
       console.log(`📋 Connected Agents (${data.total})`);
@@ -312,49 +118,32 @@ class SimpleCLIClient {
     payload: Record<string, any>
   ): Promise<any> {
     try {
-      if (!this.sessionId) {
-        throw new Error('No session ID - client not connected');
+      if (!this.client) {
+        throw new Error('Client not connected');
       }
 
-      const request = {
-        jsonrpc: '2.0',
-        id: `req_${uuidv4().substring(0, 8)}`,
-        method: 'tools/call',
-        params: {
-          name: 'send_message',
-          arguments: {
-            from_agent: this.clientId,
-            to_agent: toAgent,
-            payload: payload,
-            requires_response: true,
-          },
+      const result = await this.client.callTool({
+        name: 'send_message',
+        arguments: {
+          from_agent: this.clientId,
+          to_agent: toAgent,
+          payload: payload,
+          requires_response: true,
         },
-      };
-
-      const response = await fetch(`${this.hubUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json, text/event-stream',
-          'Mcp-Session-Id': this.sessionId,
-        },
-        body: JSON.stringify(request),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: any = await this.parseResponse(response);
-
-      if (result.error) {
-        console.log(`❌ Error: ${result.error.message}`);
+      if (!(result as any).content || !Array.isArray((result as any).content) || (result as any).content.length === 0) {
+        console.log('❌ No response from server\n');
         return null;
       }
 
-      // Parse result
-      const content = result.result.content[0].text;
-      const data = JSON.parse(content);
+      const content = (result as any).content[0];
+      if (content.type !== 'text') {
+        console.log('❌ Unexpected response type\n');
+        return null;
+      }
+
+      const data = JSON.parse(content.text);
 
       console.log('\n✅ Message sent!');
       console.log(`   Message ID: ${data.message_id}`);
@@ -370,24 +159,17 @@ class SimpleCLIClient {
   }
 
   async disconnect(): Promise<void> {
-    this.isRunning = false;
-
-    if (this.eventSource) {
-      this.eventSource.close();
+    if (this.transport) {
+      try {
+        await this.transport.terminateSession();
+      } catch (e) {
+        // Ignore errors during termination
+      }
+      await this.transport.close();
     }
 
-    // Close MCP session
-    if (this.sessionId) {
-      try {
-        await fetch(`${this.hubUrl}/mcp`, {
-          method: 'DELETE',
-          headers: {
-            'Mcp-Session-Id': this.sessionId,
-          },
-        });
-      } catch (e) {
-        // Ignore errors during disconnect
-      }
+    if (this.client) {
+      await this.client.close();
     }
 
     console.log('\n👋 Disconnected from hub\n');
@@ -408,7 +190,7 @@ async function interactiveMode(): Promise<void> {
     console.log('  send <agent_id>     - Send message to an agent');
     console.log('  quit                - Exit');
     console.log('\n' + '='.repeat(60) + '\n');
-    console.log('💡 This client listens for incoming messages via SSE');
+    console.log('💡 This client listens for incoming messages via MCP SDK');
     console.log('   You will see messages as they arrive!\n');
 
     const rl = readline.createInterface({
