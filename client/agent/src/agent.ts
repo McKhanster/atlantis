@@ -48,10 +48,6 @@ class RandomAgent {
         }
       );
 
-      // Note: Notification handler would be set up here once the hub
-      // implements message delivery via MCP notifications.
-      // For now, messages are queued on the hub but not actively delivered.
-
       // Create transport and connect
       this.transport = new StreamableHTTPClientTransport(new URL(this.hubUrl), {
         sessionId: this.sessionId,
@@ -65,13 +61,71 @@ class RandomAgent {
       // Mark as running
       this.isRunning = true;
 
-      console.log(`✅ ${this.agentId} ready and waiting for messages`);
-      console.log(`   Note: Message delivery notifications not yet implemented in hub`);
+      // Start polling for messages
+      this.startMessagePolling();
+
+      console.log(`✅ ${this.agentId} ready and polling for messages`);
 
       return true;
     } catch (e) {
       console.error(`❌ ${this.agentId} initialization failed: ${e}`);
       return false;
+    }
+  }
+
+  private startMessagePolling(): void {
+    // Poll for messages every 2 seconds
+    const pollInterval = setInterval(async () => {
+      if (!this.isRunning) {
+        clearInterval(pollInterval);
+        return;
+      }
+
+      try {
+        await this.checkMessages();
+      } catch (e) {
+        console.error(`❌ ${this.agentId} error checking messages: ${e}`);
+      }
+    }, 2000);
+  }
+
+  private async checkMessages(): Promise<void> {
+    if (!this.client) {
+      return;
+    }
+
+    try {
+      const result = await this.client.callTool({
+        name: 'get_messages',
+        arguments: {
+          agent_id: this.agentId,
+          limit: 10,
+          mark_as_read: true,
+        },
+      });
+
+      const content = (result as any).content?.[0];
+      if (content?.type === 'text') {
+        const data = JSON.parse(content.text);
+
+        if (data.total > 0) {
+          console.log(`📬 ${this.agentId} received ${data.total} message(s)`);
+
+          // Process each message
+          for (const message of data.messages) {
+            await this.handleIncomingMessage({
+              params: {
+                from_agent: message.from_agent,
+                message_id: message.message_id,
+                conversation_id: message.conversation_id,
+                payload: message.payload,
+              },
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Silently ignore errors (agent might not be registered yet)
     }
   }
 
