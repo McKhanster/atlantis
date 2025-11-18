@@ -82,6 +82,12 @@ interface GetConversationArgs {
   conversation_id: string;
 }
 
+interface GetMessagesArgs {
+  agent_id: string;
+  limit?: number;
+  mark_as_read?: boolean;
+}
+
 export class MCPHub {
   private server: Server;
   private context: HubContext;
@@ -196,6 +202,30 @@ export class MCPHub {
             },
           },
           {
+            name: 'get_messages',
+            description: 'Get messages from the agent\'s queue',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                agent_id: {
+                  type: 'string',
+                  description: 'Agent ID to get messages for',
+                },
+                limit: {
+                  type: 'number',
+                  description: 'Maximum number of messages to retrieve (default: 10)',
+                  default: 10,
+                },
+                mark_as_read: {
+                  type: 'boolean',
+                  description: 'Remove messages from queue after retrieval (default: true)',
+                  default: true,
+                },
+              },
+              required: ['agent_id'],
+            },
+          },
+          {
             name: 'get_conversation',
             description: 'Get conversation history',
             inputSchema: {
@@ -231,6 +261,9 @@ export class MCPHub {
             break;
           case 'list_agents':
             result = await this.handleListAgents();
+            break;
+          case 'get_messages':
+            result = await this.handleGetMessages(args as unknown as GetMessagesArgs);
             break;
           case 'get_conversation':
             result = await this.handleGetConversation(args as unknown as GetConversationArgs);
@@ -391,6 +424,73 @@ export class MCPHub {
     const result = {
       total: agents_list.length,
       agents: agents_list,
+    };
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result, null, 2),
+        },
+      ],
+    };
+  }
+
+  private async handleGetMessages(args: GetMessagesArgs) {
+    const { agent_id, limit = 10, mark_as_read = true } = args;
+
+    // Validate agent exists
+    if (!this.context.agents.has(agent_id)) {
+      throw new Error(`Agent '${agent_id}' not found`);
+    }
+
+    // Get message queue
+    const queue = this.context.messageQueues.get(agent_id);
+    if (!queue) {
+      // Return empty array if no queue exists
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              agent_id,
+              messages: [],
+              total: 0,
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    // Get messages (up to limit)
+    const messages = mark_as_read
+      ? queue.splice(0, limit)  // Remove from queue
+      : queue.slice(0, limit);   // Just peek
+
+    // Update agent's message count
+    const agent = this.context.agents.get(agent_id)!;
+    agent.messages_processed += messages.length;
+
+    // Log message retrieval
+    this.context.logger.info(
+      LogEventType.MESSAGE_DELIVERED,
+      `Agent ${agent_id} retrieved ${messages.length} message(s) (mark_as_read: ${mark_as_read})`
+    );
+
+    const result = {
+      agent_id,
+      messages: messages.map((msg) => ({
+        message_id: msg.message_id,
+        conversation_id: msg.conversation_id,
+        from_agent: msg.from_agent,
+        to_agent: msg.to_agent,
+        payload: msg.payload,
+        reply_to: msg.reply_to,
+        requires_response: msg.requires_response,
+        timestamp: msg.timestamp.toISOString(),
+      })),
+      total: messages.length,
+      remaining: queue.length,
     };
 
     return {
